@@ -30,9 +30,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
-        child: Text("Redirecting to login..."),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Redirecting to login..."),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushReplacementNamed(context, '/home');
+              },
+              child: const Text('Continue to Home'),
+            ),
+          ],
+        ),
       ),
     );
   }
