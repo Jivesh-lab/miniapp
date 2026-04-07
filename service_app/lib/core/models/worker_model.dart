@@ -47,21 +47,43 @@ class WorkerModel {
 
   // Convert from JSON
   factory WorkerModel.fromJson(Map<String, dynamic> json) {
+    final reviewsJson = (json['reviews'] ?? json['aboutReviews'] ?? <dynamic>[]) as List<dynamic>;
+    final parsedReviews = reviewsJson
+        .map(
+          (item) => {
+            'name': (item as Map<String, dynamic>)['user']?.toString() ??
+                item['name']?.toString() ??
+                'User',
+            'rating': (item['rating'] as num?)?.toInt() ?? 5,
+            'comment': item['comment']?.toString() ?? '',
+            'date': item['date']?.toString() ?? 'Recently',
+          },
+        )
+        .toList();
+
+    final name = (json['name'] ?? '').toString();
+    final initials = name
+        .split(' ')
+        .where((e) => e.isNotEmpty)
+        .take(2)
+        .map((e) => e[0].toUpperCase())
+        .join();
+
     return WorkerModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      rating: (json['rating'] as num).toDouble(),
-      reviews: json['reviews'] as int,
-      distance: (json['distance'] as num).toDouble(),
-      pricePerHour: json['pricePerHour'] as int,
-      experience: json['experience'] as int,
-      avatar: json['avatar'] as String,
-      isAvailable: json['isAvailable'] as bool,
-      skills: List<String>.from(json['skills'] as List),
-      profileDescription: json['profileDescription'] as String,
-      aboutReviews: List<Map<String, dynamic>>.from(
-        (json['aboutReviews'] as List).map((x) => x as Map<String, dynamic>),
-      ),
+      id: (json['_id'] ?? json['id'] ?? '').toString(),
+      name: name,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0,
+      reviews: (json['reviewsCount'] as num?)?.toInt() ?? parsedReviews.length,
+      distance: (json['distance'] as num?)?.toDouble() ?? 0,
+      pricePerHour: (json['pricePerHour'] as num?)?.toInt() ??
+          (json['price'] as num?)?.toInt() ??
+          0,
+      experience: (json['experience'] as num?)?.toInt() ?? 0,
+      avatar: (json['avatar'] ?? initials).toString(),
+      isAvailable: (json['isAvailable'] as bool?) ?? true,
+      skills: List<String>.from((json['skills'] ?? <dynamic>[]) as List<dynamic>),
+      profileDescription: (json['profileDescription'] ?? 'No description available').toString(),
+      aboutReviews: parsedReviews,
     );
   }
 

@@ -113,10 +113,10 @@ class LocalServicesApp extends StatelessWidget {
 
       onGenerateRoute: (settings) {
         if (settings.name == '/worker-detail') {
-          final worker = settings.arguments as WorkerModel;
+          final workerId = settings.arguments as String;
 
           return MaterialPageRoute(
-            builder: (context) => WorkerDetailScreen(worker: worker),
+            builder: (context) => WorkerDetailScreen(workerId: workerId),
           );
         }
 

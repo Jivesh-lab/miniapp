@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/models/worker_model.dart';
+import '../../core/services/worker_service.dart';
 
 class WorkerDetailScreen extends StatefulWidget {
-  final WorkerModel worker;
+  final String workerId;
 
   const WorkerDetailScreen({
     Key? key,
-    required this.worker,
+    required this.workerId,
   }) : super(key: key);
 
   @override
@@ -17,6 +18,38 @@ class WorkerDetailScreen extends StatefulWidget {
 
 class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
   bool _isFavorite = false;
+  final WorkerService _workerService = WorkerService();
+  WorkerModel? _worker;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchWorker();
+  }
+
+  Future<void> _fetchWorker() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final worker = await _workerService.getWorkerById(widget.workerId);
+      if (!mounted) return;
+      setState(() {
+        _worker = worker;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +65,30 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: _buildAppBar(isMobile),
-        body: Stack(
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(color: Colors.red.shade600),
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: _fetchWorker,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : Stack(
           children: [
             SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
@@ -75,6 +131,8 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
       ),
     );
   }
+
+  WorkerModel get worker => _worker!;
 
   PreferredSize _buildAppBar(bool isMobile) {
     return PreferredSize(
@@ -154,7 +212,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
             ),
             child: Center(
               child: Text(
-                widget.worker.avatar,
+                worker.avatar,
                 style: GoogleFonts.inter(
                   fontSize: isMobile ? 32 : 40,
                   fontWeight: FontWeight.w600,
@@ -166,7 +224,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
           const SizedBox(height: 16),
           // Name
           Text(
-            widget.worker.name,
+            worker.name,
             style: GoogleFonts.inter(
               fontSize: isMobile ? 22 : 24,
               fontWeight: FontWeight.w700,
@@ -196,7 +254,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '${widget.worker.rating}',
+                      '${worker.rating}',
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -205,7 +263,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '(${widget.worker.reviews} reviews)',
+                      '(${worker.reviews} reviews)',
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         color: Colors.amber.shade700,
@@ -225,7 +283,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              '${widget.worker.experience} years experience',
+              '${worker.experience} years experience',
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -243,7 +301,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
               border: Border.all(color: Colors.grey.shade200),
             ),
             child: Text(
-              widget.worker.profileDescription,
+              worker.profileDescription,
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 fontSize: 13,
@@ -292,7 +350,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${widget.worker.distance} km',
+                  '${worker.distance} km',
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -336,7 +394,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '₹${widget.worker.pricePerHour}',
+                  '₹${worker.pricePerHour}',
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -367,7 +425,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: widget.worker.skills
+          children: worker.skills
               .map(
                 (skill) => Container(
                   padding: const EdgeInsets.symmetric(
@@ -423,7 +481,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        ...widget.worker.aboutReviews
+        ...worker.aboutReviews
             .map(
               (review) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -531,7 +589,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                   Navigator.pushNamed(
                     context,
                     '/booking',
-                    arguments: widget.worker,
+                    arguments: worker,
                   );
                 },
                 borderRadius: BorderRadius.circular(12),
@@ -604,17 +662,17 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
               const SizedBox(height: 16),
               _buildConfirmationItem(
                 'Service Provider',
-                widget.worker.name,
+                worker.name,
               ),
               const SizedBox(height: 12),
               _buildConfirmationItem(
                 'Service Price',
-                '₹${widget.worker.pricePerHour}',
+                '₹${worker.pricePerHour}',
               ),
               const SizedBox(height: 12),
               _buildConfirmationItem(
                 'Rating',
-                '${widget.worker.rating} ⭐',
+                '${worker.rating} ⭐',
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -625,7 +683,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Booking request sent to ${widget.worker.name}!',
+                          'Booking request sent to ${worker.name}!',
                           style: GoogleFonts.inter(
                             fontWeight: FontWeight.w500,
                           ),

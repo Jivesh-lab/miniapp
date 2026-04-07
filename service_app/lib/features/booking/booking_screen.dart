@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/models/worker_model.dart';
+import '../../core/services/booking_service.dart';
 
 class BookingScreen extends StatefulWidget {
   final WorkerModel worker;
@@ -19,6 +20,8 @@ class _BookingScreenState extends State<BookingScreen> {
   late DateTime _selectedDate;
   String? _selectedTimeSlot;
   late TextEditingController _addressController;
+  final BookingService _bookingService = BookingService();
+  bool _isSubmitting = false;
 
   final List<String> timeSlots = [
     '10:00 AM',
@@ -462,7 +465,7 @@ class _BookingScreenState extends State<BookingScreen> {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: isFormValid ? _confirmBooking : null,
+                onTap: isFormValid && !_isSubmitting ? _confirmBooking : null,
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -472,14 +475,23 @@ class _BookingScreenState extends State<BookingScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        color: Colors.white.withOpacity(isFormValid ? 1 : 0.5),
-                        size: 20,
-                      ),
+                      _isSubmitting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Icon(
+                              Icons.check_circle_outline,
+                              color: Colors.white.withOpacity(isFormValid ? 1 : 0.5),
+                              size: 20,
+                            ),
                       const SizedBox(width: 8),
                       Text(
-                        'Confirm Booking',
+                        _isSubmitting ? 'Booking...' : 'Confirm Booking',
                         style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -523,23 +535,55 @@ class _BookingScreenState extends State<BookingScreen> {
     }
   }
 
-  void _confirmBooking() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Booking confirmed!',
-          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-        ),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 1),
-      ),
-    );
+  Future<void> _confirmBooking() async {
+    if (_selectedTimeSlot == null || _addressController.text.trim().isEmpty) {
+      return;
+    }
 
-    Future.delayed(const Duration(seconds: 2), () {
+    setState(() => _isSubmitting = true);
+
+    try {
+      await _bookingService.createBooking({
+        'userId': 'demo-user-1',
+        'workerId': widget.worker.id,
+        'date': _selectedDate.toIso8601String().split('T').first,
+        'time': _selectedTimeSlot,
+        'address': _addressController.text.trim(),
+      });
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Booking confirmed!',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+
       Navigator.pushNamed(context, '/my-bookings');
-    });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+            style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+          ),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
   }
 
   String _getMonthName(int month) {

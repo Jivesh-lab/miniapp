@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/models/booking_model.dart';
+import '../../core/services/booking_service.dart';
 import '../../core/widgets/booking_card.dart';
 
 class MyBookingsScreen extends StatefulWidget {
@@ -15,56 +16,13 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _selectedTabIndex = 0;
+  final BookingService _bookingService = BookingService();
+  bool _isLoading = true;
+  String? _errorMessage;
+  static const String _userId = 'demo-user-1';
 
-  final List<BookingModel> allBookings = [
-    BookingModel(
-      id: '1',
-      workerId: '1',
-      workerName: 'Rajesh Kumar',
-      serviceType: 'Plumbing',
-      date: DateTime.now().add(const Duration(days: 2)),
-      timeSlot: '10:00 AM',
-      address: '123 Main Street, Apartment 4B',
-      status: BookingStatus.pending,
-      createdAt: DateTime.now(),
-    ),
-    BookingModel(
-      id: '2',
-      workerId: '2',
-      workerName: 'Vikram Singh',
-      serviceType: 'Electrical',
-      date: DateTime.now().subtract(const Duration(days: 5)),
-      timeSlot: '2:00 PM',
-      address: '456 Oak Avenue, Suite 200',
-      status: BookingStatus.completed,
-      createdAt: DateTime.now().subtract(const Duration(days: 10)),
-    ),
-    BookingModel(
-      id: '3',
-      workerId: '3',
-      workerName: 'Suresh Nair',
-      serviceType: 'Cleaning',
-      date: DateTime.now().add(const Duration(days: 5)),
-      timeSlot: '12:00 PM',
-      address: '789 Pine Road, Floor 3',
-      status: BookingStatus.pending,
-      createdAt: DateTime.now(),
-    ),
-    BookingModel(
-      id: '4',
-      workerId: '1',
-      workerName: 'Rajesh Kumar',
-      serviceType: 'Plumbing',
-      date: DateTime.now().subtract(const Duration(days: 15)),
-      timeSlot: '4:00 PM',
-      address: '321 Elm Street, Bungalow 5',
-      status: BookingStatus.completed,
-      createdAt: DateTime.now().subtract(const Duration(days: 20)),
-    ),
-  ];
-
-  late List<BookingModel> ongoingBookings;
-  late List<BookingModel> completedBookings;
+  List<BookingModel> ongoingBookings = [];
+  List<BookingModel> completedBookings = [];
 
   @override
   void initState() {
@@ -74,15 +32,39 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       setState(() => _selectedTabIndex = _tabController.index);
     });
 
-    ongoingBookings = allBookings
-        .where((b) => b.status == BookingStatus.pending)
-        .toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    _fetchBookings();
+  }
 
-    completedBookings = allBookings
-        .where((b) => b.status == BookingStatus.completed)
-        .toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+  Future<void> _fetchBookings() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final allBookings = await _bookingService.getBookings(_userId);
+
+      if (!mounted) return;
+      setState(() {
+        ongoingBookings = allBookings
+            .where((b) => b.status == BookingStatus.pending)
+            .toList()
+          ..sort((a, b) => b.date.compareTo(a.date));
+
+        completedBookings = allBookings
+            .where((b) => b.status == BookingStatus.completed)
+            .toList()
+          ..sort((a, b) => b.date.compareTo(a.date));
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -125,17 +107,46 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
             ),
           ),
           // Tab Content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildTabContent(ongoingBookings, isMobile),
-                _buildTabContent(completedBookings, isMobile),
-              ],
-            ),
-          ),
+          Expanded(child: _buildContent(isMobile)),
         ],
       ),
+    );
+  }
+
+  Widget _buildContent(bool isMobile) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(color: Colors.red.shade600),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: _fetchBookings,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return TabBarView(
+      controller: _tabController,
+      children: [
+        _buildTabContent(ongoingBookings, isMobile),
+        _buildTabContent(completedBookings, isMobile),
+      ],
     );
   }
 

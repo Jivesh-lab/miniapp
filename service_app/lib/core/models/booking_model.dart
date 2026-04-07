@@ -36,10 +36,11 @@ class BookingModel {
       'workerId': workerId,
       'workerName': workerName,
       'serviceType': serviceType,
-      'date': date.toIso8601String(),
+      'date': date.toIso8601String().split('T').first,
+      'time': timeSlot,
       'timeSlot': timeSlot,
       'address': address,
-      'status': status.toString(),
+      'status': statusString.toLowerCase(),
       'createdAt': createdAt.toIso8601String(),
       'completedAt': completedAt?.toIso8601String(),
       'rating': rating,
@@ -49,20 +50,24 @@ class BookingModel {
 
   // Convert from JSON
   factory BookingModel.fromJson(Map<String, dynamic> json) {
+    final workerJson = json['workerId'];
+    final workerData = workerJson is Map<String, dynamic> ? workerJson : <String, dynamic>{};
+    final rawDate = (json['date'] ?? DateTime.now().toIso8601String()).toString();
+
     return BookingModel(
-      id: json['id'] as String,
-      workerId: json['workerId'] as String,
-      workerName: json['workerName'] as String,
-      serviceType: json['serviceType'] as String,
-      date: DateTime.parse(json['date'] as String),
-      timeSlot: json['timeSlot'] as String,
-      address: json['address'] as String,
+      id: (json['_id'] ?? json['id'] ?? '').toString(),
+      workerId: workerData['_id']?.toString() ?? (json['workerId'] ?? '').toString(),
+      workerName: (json['workerName'] ?? workerData['name'] ?? 'Worker').toString(),
+      serviceType: (json['serviceType'] ?? 'Service').toString(),
+      date: DateTime.tryParse(rawDate) ?? DateTime.now(),
+      timeSlot: (json['timeSlot'] ?? json['time'] ?? '').toString(),
+      address: (json['address'] ?? '').toString(),
       status: _parseStatus(json['status'] as String),
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: DateTime.tryParse((json['createdAt'] ?? rawDate).toString()) ?? DateTime.now(),
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'] as String)
           : null,
-      rating: json['rating'] as double?,
+      rating: (json['rating'] as num?)?.toDouble(),
       review: json['review'] as String?,
     );
   }
@@ -119,11 +124,15 @@ class BookingModel {
 
   static BookingStatus _parseStatus(String status) {
     switch (status) {
+      case 'ongoing':
       case 'BookingStatus.pending':
+      case 'pending':
         return BookingStatus.pending;
       case 'BookingStatus.completed':
+      case 'completed':
         return BookingStatus.completed;
       case 'BookingStatus.cancelled':
+      case 'cancelled':
         return BookingStatus.cancelled;
       default:
         return BookingStatus.pending;

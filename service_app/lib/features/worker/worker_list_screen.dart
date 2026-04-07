@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/models/worker_model.dart';
+import '../../core/services/worker_service.dart';
 import '../../core/widgets/worker_card.dart';
 import 'worker_detail_screen.dart';
 
@@ -19,140 +20,46 @@ class WorkerListScreen extends StatefulWidget {
 
 class _WorkerListScreenState extends State<WorkerListScreen> {
   String _selectedSort = 'nearest';
+  final WorkerService _workerService = WorkerService();
+  bool _isLoading = true;
+  String? _errorMessage;
 
-  final List<WorkerModel> workers = [
-    WorkerModel(
-      id: '1',
-      name: 'Rajesh Kumar',
-      rating: 4.8,
-      reviews: 156,
-      distance: 1.2,
-      pricePerHour: 200,
-      experience: 3,
-      avatar: 'RK',
-      isAvailable: true,
-      skills: ['General Plumbing', 'Pipe Installation', 'Leak Repair'],
-      profileDescription: 'Experienced plumber with 3 years of professional experience.',
-      aboutReviews: [
-        {
-          'name': 'Amit Sharma',
-          'rating': 5,
-          'comment': 'Very professional and timely service. Highly recommended!',
-          'date': '2 weeks ago',
-        },
-        {
-          'name': 'Priya Desai',
-          'rating': 4,
-          'comment': 'Good work quality. Took slightly longer than expected.',
-          'date': '1 month ago',
-        },
-      ],
-    ),
-    WorkerModel(
-      id: '2',
-      name: 'Vikram Singh',
-      rating: 4.6,
-      reviews: 89,
-      distance: 2.5,
-      pricePerHour: 180,
-      experience: 5,
-      avatar: 'VS',
-      isAvailable: true,
-      skills: ['Plumbing', 'Maintenance', 'Emergency Repair'],
-      profileDescription: 'Senior plumber with expertise in all plumbing services.',
-      aboutReviews: [
-        {
-          'name': 'Rohit Patel',
-          'rating': 5,
-          'comment': 'Excellent service quality. Very knowledgeable.',
-          'date': '3 weeks ago',
-        },
-      ],
-    ),
-    WorkerModel(
-      id: '3',
-      name: 'Suresh Nair',
-      rating: 4.9,
-      reviews: 203,
-      distance: 3.1,
-      pricePerHour: 220,
-      experience: 7,
-      avatar: 'SN',
-      isAvailable: true,
-      skills: ['Complex Plumbing', 'Pipe Works', 'Installation'],
-      profileDescription: 'Master plumber with extensive experience in residential and commercial plumbing.',
-      aboutReviews: [
-        {
-          'name': 'Anjali Singh',
-          'rating': 5,
-          'comment': 'Outstanding work! Finished ahead of schedule.',
-          'date': '1 week ago',
-        },
-      ],
-    ),
-    WorkerModel(
-      id: '4',
-      name: 'Mohan Das',
-      rating: 4.5,
-      reviews: 67,
-      distance: 4.2,
-      pricePerHour: 160,
-      experience: 2,
-      avatar: 'MD',
-      isAvailable: true,
-      skills: ['Basic Plumbing', 'Repairs'],
-      profileDescription: 'Skilled plumber specializing in residential repairs.',
-      aboutReviews: [
-        {
-          'name': 'Neha Verma',
-          'rating': 4,
-          'comment': 'Good service at reasonable price.',
-          'date': '2 months ago',
-        },
-      ],
-    ),
-  ];
-
-  late List<WorkerModel> _serviceWorkers;
-  late List<WorkerModel> _filteredWorkers;
+  List<WorkerModel> _workers = [];
 
   @override
   void initState() {
     super.initState();
-    _serviceWorkers = _workersForService(widget.serviceType);
-    _filteredWorkers = _sortWorkers(_serviceWorkers);
+    _fetchWorkers();
   }
 
-  List<WorkerModel> _workersForService(String? serviceType) {
-    if (serviceType == null || serviceType.trim().isEmpty) {
-      return workers;
-    }
+  Future<void> _fetchWorkers() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-    final loweredType = serviceType.toLowerCase();
-    final matched = workers
-        .where(
-          (worker) => worker.skills.any(
-            (skill) => skill.toLowerCase().contains(loweredType),
-          ),
-        )
-        .toList();
+    try {
+      final serviceId = (widget.serviceType ?? '').trim();
+      final sort = _selectedSort == 'rating' || _selectedSort == 'price'
+          ? _selectedSort
+          : null;
 
-    return matched.isEmpty ? workers : matched;
-  }
+      final workers = await _workerService.getWorkers(
+        serviceId: serviceId,
+        sort: sort,
+      );
 
-  List<WorkerModel> _sortWorkers(List<WorkerModel> workersList) {
-    switch (_selectedSort) {
-      case 'nearest':
-        return List.from(workersList)
-          ..sort((a, b) => a.distance.compareTo(b.distance));
-      case 'rating':
-        return List.from(workersList)
-          ..sort((a, b) => b.rating.compareTo(a.rating));
-      case 'price':
-        return List.from(workersList)
-          ..sort((a, b) => a.pricePerHour.compareTo(b.pricePerHour));
-      default:
-        return workersList;
+      if (!mounted) return;
+      setState(() {
+        _workers = workers;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _isLoading = false;
+      });
     }
   }
 
@@ -192,29 +99,62 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
             ),
           ),
           // Worker List
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 16 : 24,
-                vertical: 8,
-              ),
-              itemCount: _filteredWorkers.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: WorkerCard(
-                    worker: _filteredWorkers[index],
-                    onTap: () => _navigateToWorkerDetail(
-                      context,
-                      _filteredWorkers[index],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
+          Expanded(child: _buildBodyContent(isMobile)),
         ],
       ),
+    );
+  }
+
+  Widget _buildBodyContent(bool isMobile) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(color: Colors.red.shade600),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: _fetchWorkers,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_workers.isEmpty) {
+      return const Center(child: Text('No workers found'));
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 16 : 24,
+        vertical: 8,
+      ),
+      itemCount: _workers.length,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: WorkerCard(
+            worker: _workers[index],
+            onTap: () => _navigateToWorkerDetail(
+              context,
+              _workers[index],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -261,8 +201,8 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
       onTap: () {
         setState(() {
           _selectedSort = value;
-          _filteredWorkers = _sortWorkers(_serviceWorkers);
         });
+        _fetchWorkers();
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -290,7 +230,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
     Navigator.of(context).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) {
-          return WorkerDetailScreen(worker: worker);
+          return WorkerDetailScreen(workerId: worker.id);
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(

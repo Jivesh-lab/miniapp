@@ -1,15 +1,25 @@
 import express from "express";
 import {
   getWorkers,
-  getWorkerById
+  getWorkerById,
 } from "../controllers/worker.controller.js";
 
 const router = express.Router();
 
-// GET workers by service + sorting
-router.get("/:serviceId", getWorkers);
+const searchWorkers = async (req, res) => {
+  return res.status(501).json({
+    success: false,
+    message: "searchWorkers controller not implemented",
+  });
+};
 
-// GET single worker
+// GET /api/workers/search?q=...
+router.get("/search", searchWorkers);
+
+// GET /api/workers/detail/:id
 router.get("/detail/:id", getWorkerById);
+
+// GET /api/workers/:serviceId?sort=rating|price
+router.get("/:serviceId", getWorkers);
 
 export default router;
