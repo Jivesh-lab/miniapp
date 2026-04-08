@@ -1,0 +1,1550 @@
+﻿{
+  "report": {
+    "functional": {
+      "servicesApi": {
+        "status": "PASS",
+        "request": "GET http://localhost:5000/api/services",
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "count": 4,
+            "data": [
+              {
+                "_id": "69d63119ab7c6696f135282e",
+                "name": "AC Repair",
+                "createdAt": "2026-04-08T10:42:33.202Z",
+                "updatedAt": "2026-04-08T10:42:33.202Z"
+              },
+              {
+                "_id": "69d63119ab7c6696f135282d",
+                "name": "Cleaner",
+                "createdAt": "2026-04-08T10:42:33.202Z",
+                "updatedAt": "2026-04-08T10:42:33.202Z"
+              },
+              {
+                "_id": "69d63119ab7c6696f135282c",
+                "name": "Electrician",
+                "createdAt": "2026-04-08T10:42:33.202Z",
+                "updatedAt": "2026-04-08T10:42:33.202Z"
+              },
+              {
+                "_id": "69d63119ab7c6696f135282b",
+                "name": "Plumber",
+                "createdAt": "2026-04-08T10:42:33.201Z",
+                "updatedAt": "2026-04-08T10:42:33.201Z"
+              }
+            ]
+          }
+        }
+      },
+      "workersGlobal": {
+        "status": "FAIL",
+        "request": "GET http://localhost:5000/api/workers?page=1&limit=5&sort=rating",
+        "response": {
+          "status": 500,
+          "body": {
+            "success": false,
+            "message": "Failed to fetch workers",
+            "error": "Cast to Number failed for value \"{}\" (type Object) at path \"price\" for model \"Worker\""
+          }
+        },
+        "checks": {
+          "sortedDescendingRating": false,
+          "limitRespected": false
+        }
+      },
+      "workersByService": {
+        "status": "PASS",
+        "request": "GET http://localhost:5000/api/workers/69d63119ab7c6696f135282e?page=1&sort=rating",
+        "response": {
+          "status": 200,
+          "body": {
+            "success": true,
+            "count": 2,
+            "total": 2,
+            "page": 1,
+            "totalPages": 1,
+            "data": [
+              {
+                "_id": "69d63119ab7c6696f1352850",
+                "name": "Imran Shaikh",
+                "serviceId": "69d63119ab7c6696f135282e",
+                "rating": 4.8,
+                "price": 500,
+                "location": "Navi Mumbai",
+                "skills": [
+                  "AC Gas Refill",
+                  "Cooling Issue",
+                  "Compressor Check"
+                ],
+                "reviews": [
+                  {
+                    "user": "Rina",
+                    "comment": "AC cooling restored perfectly",
+                    "rating": 5,
+                    "_id": "69d63119ab7c6696f1352851"
+                  },
+                  {
+                    "user": "Harsh",
+                    "comment": "Expert in AC servicing",
+                    "rating": 5,
+                    "_id": "69d63119ab7c6696f1352852"
+                  }
+                ],
+                "availableSlots": [
+                  {
+                    "date": "2026-04-10",
+                    "timeSlots": [
+                      "10:00 AM",
+                      "12:00 PM",
+                      "2:00 PM",
+                      "4:00 PM"
+                    ],
+                    "_id": "69d63119ab7c6696f1352853"
+                  },
+                  {
+                    "date": "2026-04-11",
+                    "timeSlots": [
+                      "10:00 AM",
+                      "12:00 PM",
+                      "2:00 PM",
+                      "4:00 PM"
+                    ],
+                    "_id": "69d63119ab7c6696f1352854"
+                  }
+                ],
+                "createdAt": "2026-04-08T10:42:33.235Z",
+                "updatedAt": "2026-04-08T10:42:33.235Z"
+              },
+              {
+                "_id": "69d63119ab7c6696f1352855",
+                "name": "Anil Gaikwad",
+                "serviceId": "69d63119ab7c6696f135282e",
+                "rating": 4.1,
+                "price": 260,
+                "location": "Mumbai",
+                "skills": [
+                  "AC Filter Cleaning",
+                  "General Service",
+                  "Water Leakage Fix"
+                ],
+                "reviews": [
+                  {
+                    "user": "Komal",
+                    "comment": "Did proper servicing",
+                    "rating": 4,
+                    "_id": "69d63119ab7c6696f1352856"
+                  },
+                  {
+                    "user": "Nilesh",
+                    "comment": "Reasonable and helpful",
+                    "rating": 4,
+                    "_id": "69d63119ab7c6696f1352857"
+                  },
+                  {
+                    "user": "Ajay",
+                    "comment": "Good for regular AC maintenance",
+                    "rating": 4,
+                    "_id": "69d63119ab7c6696f1352858"
+                  }
+                ],
+                "availableSlots": [
+                  {
+                    "date": "2026-04-10",
+                    "timeSlots": [
+                      "10:00 AM",
+                      "12:00 PM",
+                      "2:00 PM",
+                      "4:00 PM"
+                    ],
+                    "_id": "69d63119ab7c6696f1352859"
+                  },
+                  {
+                    "date": "2026-04-11",
+                    "timeSlots": [
+                      "10:00 AM",
+                      "12:00 PM",
+                      "2:00 PM",
+                      "4:00 PM"
+                    ],
+                    "_id": "69d63119ab7c6696f135285a"
+                  }
+                ],
+                "createdAt": "2026-04-08T10:42:33.235Z",
+                "updatedAt": "2026-04-08T10:42:33.235Z"
+              }
+            ]
+          }
+        },
+        "checks": {
+          "allWorkersBelongToService": true
+        }
+      },
+      "searchWorkers": {
+        "status": "FAIL",
+        "request": "GET http://localhost:5000/api/workers?q=cleaner",
+        "response": {
+          "status": 500,
+          "body": {
+            "success": false,
+            "message": "Failed to fetch workers",
+            "error": "Cast to Number failed for value \"{}\" (type Object) at path \"price\" for model \"Worker\""
+          }
+        },
+        "checks": {
+          "caseInsensitiveMatching": false
+        }
+      }
+    },
+    "booking": {
+      "validBooking": {
+        "status": "FAIL",
+        "request": "POST http://localhost:5000/api/bookings",
+        "response": {
+          "status": "ERROR",
+          "body": "TypeError: fetch failed"
+        }
+      },
+      "invalidSlot": {
+        "status": "FAIL",
+        "request": "POST http://localhost:5000/api/bookings",
+        "response": {
+          "status": "ERROR",
+          "body": "TypeError: fetch failed"
+        }
+      },
+      "duplicateBooking": {
+        "status": "FAIL",
+        "requests": [
+          "POST http://localhost:5000/api/bookings",
+          "POST http://localhost:5000/api/bookings"
+        ],
+        "responses": [
+          {
+            "status": "ERROR",
+            "body": "TypeError: fetch failed"
+          },
+          {
+            "status": "ERROR",
+            "body": "TypeError: fetch failed"
+          }
+        ],
+        "checks": {
+          "successCount": 0,
+          "conflictCount": 0,
+          "bookedCountForDupSlot": 0,
+          "slot": "12:00 PM"
+        }
+      },
+      "lifecycle": {
+        "status": "FAIL",
+        "requests": [
+          "POST http://localhost:5000/api/bookings",
+          "PATCH http://localhost:5000/api/bookings/<missing>",
+          "PATCH http://localhost:5000/api/bookings/<missing>"
+        ],
+        "responses": [
+          {
+            "status": "ERROR",
+            "body": "TypeError: fetch failed"
+          },
+          {
+            "status": "SKIP",
+            "body": "Create failed"
+          },
+          {
+            "status": "SKIP",
+            "body": "Create failed"
+          }
+        ]
+      }
+    },
+    "favorites": {
+      "toggleFlow": {
+        "status": "FAIL",
+        "requests": [
+          "POST http://localhost:5000/api/users/favorites",
+          "POST http://localhost:5000/api/users/favorites",
+          "POST http://localhost:5000/api/users/favorites",
+          "GET http://localhost:5000/api/users/favorites/12345"
+        ],
+        "responses": [
+          {
+            "status": "ERROR",
+            "body": "TypeError: fetch failed"
+          },
+          {
+            "status": "ERROR",
+            "body": "TypeError: fetch failed"
+          },
+          {
+            "status": "ERROR",
+            "body": "TypeError: fetch failed"
+          },
+          {
+            "status": "ERROR",
+            "body": "TypeError: fetch failed"
+          }
+        ],
+        "checks": {
+          "count": 0,
+          "duplicates": false
+        }
+      }
+    },
+    "edgeCases": {
+      "status": "FAIL",
+      "requests": [
+        "GET http://localhost:5000/api/workers/detail/invalid-object-id",
+        "POST http://localhost:5000/api/bookings",
+        "GET http://localhost:5000/api/workers?q=&page=&limit=",
+        "GET http://localhost:5000/api/workers?page=-2&limit=-10",
+        "GET http://localhost:5000/api/workers?page=1&limit=1000"
+      ],
+      "responses": [
+        {
+          "status": "ERROR",
+          "body": "TypeError: fetch failed"
+        },
+        {
+          "status": "ERROR",
+          "body": "TypeError: fetch failed"
+        },
+        {
+          "status": "ERROR",
+          "body": "TypeError: fetch failed"
+        },
+        {
+          "status": "ERROR",
+          "body": "TypeError: fetch failed"
+        },
+        {
+          "status": "ERROR",
+          "body": "TypeError: fetch failed"
+        },
+        {
+          "status": "ERROR",
+          "body": "TypeError: fetch failed"
+        }
+      ]
+    },
+    "performance": {
+      "loadTestWorkers": {
+        "status": "FAIL",
+        "request": "50 x GET http://localhost:5000/api/workers?page=1&limit=10&sort=rating (concurrent)",
+        "metrics": {
+          "totalBatchMs": 63,
+          "avgMs": 46,
+          "p95Ms": 51,
+          "maxMs": 52
+        }
+      },
+      "bookingStress": {
+        "status": "FAIL",
+        "request": "20 x POST http://localhost:5000/api/bookings same worker/date/time (concurrent)",
+        "checks": {
+          "success201": 0,
+          "conflict409": 0,
+          "slot": "10:00 AM",
+          "date": "2026-04-10"
+        }
+      }
+    },
+    "scalability": {
+      "status": "PASS",
+      "checks": {
+        "paginationImplemented": true,
+        "controlledResponseSize": true,
+        "workerIndexes": {
+          "rating": true,
+          "price": true,
+          "serviceId": true
+        },
+        "bookingUniqueIndex": true,
+        "leanQueriesUsed": true,
+        "unnecessaryLoopsDetected": false
+      }
+    },
+    "security": {
+      "status": "FAIL",
+      "checks": {
+        "inputValidationPresent": true,
+        "mongoInjectionProbeStatus": "ERROR",
+        "mongoInjectionProbeBody": "TypeError: fetch failed",
+        "properStatusCodesUsed": false
+      }
+    },
+    "issues": [
+      {
+        "area": "Functional",
+        "title": "Global workers API validation failed",
+        "details": {
+          "status": "FAIL",
+          "request": "GET http://localhost:5000/api/workers?page=1&limit=5&sort=rating",
+          "response": {
+            "status": 500,
+            "body": {
+              "success": false,
+              "message": "Failed to fetch workers",
+              "error": "Cast to Number failed for value \"{}\" (type Object) at path \"price\" for model \"Worker\""
+            }
+          },
+          "checks": {
+            "sortedDescendingRating": false,
+            "limitRespected": false
+          }
+        }
+      },
+      {
+        "area": "Functional",
+        "title": "Search for q=cleaner returned no/invalid matches",
+        "details": {
+          "status": "FAIL",
+          "request": "GET http://localhost:5000/api/workers?q=cleaner",
+          "response": {
+            "status": 500,
+            "body": {
+              "success": false,
+              "message": "Failed to fetch workers",
+              "error": "Cast to Number failed for value \"{}\" (type Object) at path \"price\" for model \"Worker\""
+            }
+          },
+          "checks": {
+            "caseInsensitiveMatching": false
+          }
+        }
+      },
+      {
+        "area": "Booking",
+        "title": "Valid booking failed",
+        "details": {
+          "status": "FAIL",
+          "request": "POST http://localhost:5000/api/bookings",
+          "response": {
+            "status": "ERROR",
+            "body": "TypeError: fetch failed"
+          }
+        }
+      },
+      {
+        "area": "Booking",
+        "title": "Invalid slot response not standardized",
+        "details": {
+          "status": "FAIL",
+          "request": "POST http://localhost:5000/api/bookings",
+          "response": {
+            "status": "ERROR",
+            "body": "TypeError: fetch failed"
+          }
+        }
+      },
+      {
+        "area": "Booking",
+        "title": "Duplicate slot locking failed",
+        "details": {
+          "status": "FAIL",
+          "requests": [
+            "POST http://localhost:5000/api/bookings",
+            "POST http://localhost:5000/api/bookings"
+          ],
+          "responses": [
+            {
+              "status": "ERROR",
+              "body": "TypeError: fetch failed"
+            },
+            {
+              "status": "ERROR",
+              "body": "TypeError: fetch failed"
+            }
+          ],
+          "checks": {
+            "successCount": 0,
+            "conflictCount": 0,
+            "bookedCountForDupSlot": 0,
+            "slot": "12:00 PM"
+          }
+        }
+      },
+      {
+        "area": "Booking",
+        "title": "Booking lifecycle transition failed",
+        "details": {
+          "status": "FAIL",
+          "requests": [
+            "POST http://localhost:5000/api/bookings",
+            "PATCH http://localhost:5000/api/bookings/<missing>",
+            "PATCH http://localhost:5000/api/bookings/<missing>"
+          ],
+          "responses": [
+            {
+              "status": "ERROR",
+              "body": "TypeError: fetch failed"
+            },
+            {
+              "status": "SKIP",
+              "body": "Create failed"
+            },
+            {
+              "status": "SKIP",
+              "body": "Create failed"
+            }
+          ]
+        }
+      },
+      {
+        "area": "Favorites",
+        "title": "Favorites toggle/list consistency failed",
+        "details": {
+          "status": "FAIL",
+          "requests": [
+            "POST http://localhost:5000/api/users/favorites",
+            "POST http://localhost:5000/api/users/favorites",
+            "POST http://localhost:5000/api/users/favorites",
+            "GET http://localhost:5000/api/users/favorites/12345"
+          ],
+          "responses": [
+            {
+              "status": "ERROR",
+              "body": "TypeError: fetch failed"
+            },
+            {
+              "status": "ERROR",
+              "body": "TypeError: fetch failed"
+            },
+            {
+              "status": "ERROR",
+              "body": "TypeError: fetch failed"
+            },
+            {
+              "status": "ERROR",
+              "body": "TypeError: fetch failed"
+            }
+          ],
+          "checks": {
+            "count": 0,
+            "duplicates": false
+          }
+        }
+      },
+      {
+        "area": "Edge",
+        "title": "Edge case handling failed",
+        "details": {
+          "status": "FAIL",
+          "requests": [
+            "GET http://localhost:5000/api/workers/detail/invalid-object-id",
+            "POST http://localhost:5000/api/bookings",
+            "GET http://localhost:5000/api/workers?q=&page=&limit=",
+            "GET http://localhost:5000/api/workers?page=-2&limit=-10",
+            "GET http://localhost:5000/api/workers?page=1&limit=1000"
+          ],
+          "responses": [
+            {
+              "status": "ERROR",
+              "body": "TypeError: fetch failed"
+            },
+            {
+              "status": "ERROR",
+              "body": "TypeError: fetch failed"
+            },
+            {
+              "status": "ERROR",
+              "body": "TypeError: fetch failed"
+            },
+            {
+              "status": "ERROR",
+              "body": "TypeError: fetch failed"
+            },
+            {
+              "status": "ERROR",
+              "body": "TypeError: fetch failed"
+            },
+            {
+              "status": "ERROR",
+              "body": "TypeError: fetch failed"
+            }
+          ]
+        }
+      },
+      {
+        "area": "Performance",
+        "title": "50-concurrent workers endpoint exceeded threshold or failed",
+        "details": {
+          "status": "FAIL",
+          "request": "50 x GET http://localhost:5000/api/workers?page=1&limit=10&sort=rating (concurrent)",
+          "metrics": {
+            "totalBatchMs": 63,
+            "avgMs": 46,
+            "p95Ms": 51,
+            "maxMs": 52
+          }
+        }
+      },
+      {
+        "area": "Performance",
+        "title": "Booking stress lock behavior failed",
+        "details": {
+          "status": "FAIL",
+          "request": "20 x POST http://localhost:5000/api/bookings same worker/date/time (concurrent)",
+          "checks": {
+            "success201": 0,
+            "conflict409": 0,
+            "slot": "10:00 AM",
+            "date": "2026-04-10"
+          }
+        }
+      },
+      {
+        "area": "Security",
+        "title": "Security baseline checks failed",
+        "details": {
+          "status": "FAIL",
+          "checks": {
+            "inputValidationPresent": true,
+            "mongoInjectionProbeStatus": "ERROR",
+            "mongoInjectionProbeBody": "TypeError: fetch failed",
+            "properStatusCodesUsed": false
+          }
+        }
+      }
+    ]
+  },
+  "finalVerdict": "NOT READY",
+  "failCount": 11,
+  "logs": [
+    {
+      "name": "Services API",
+      "method": "GET",
+      "url": "http://localhost:5000/api/services",
+      "status": 200,
+      "durationMs": 137,
+      "body": {
+        "success": true,
+        "count": 4,
+        "data": [
+          {
+            "_id": "69d63119ab7c6696f135282e",
+            "name": "AC Repair",
+            "createdAt": "2026-04-08T10:42:33.202Z",
+            "updatedAt": "2026-04-08T10:42:33.202Z"
+          },
+          {
+            "_id": "69d63119ab7c6696f135282d",
+            "name": "Cleaner",
+            "createdAt": "2026-04-08T10:42:33.202Z",
+            "updatedAt": "2026-04-08T10:42:33.202Z"
+          },
+          {
+            "_id": "69d63119ab7c6696f135282c",
+            "name": "Electrician",
+            "createdAt": "2026-04-08T10:42:33.202Z",
+            "updatedAt": "2026-04-08T10:42:33.202Z"
+          },
+          {
+            "_id": "69d63119ab7c6696f135282b",
+            "name": "Plumber",
+            "createdAt": "2026-04-08T10:42:33.201Z",
+            "updatedAt": "2026-04-08T10:42:33.201Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Workers API Global",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=5&sort=rating",
+      "status": 500,
+      "durationMs": 7,
+      "body": {
+        "success": false,
+        "message": "Failed to fetch workers",
+        "error": "Cast to Number failed for value \"{}\" (type Object) at path \"price\" for model \"Worker\""
+      }
+    },
+    {
+      "name": "Workers by Service",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers/69d63119ab7c6696f135282e?page=1&sort=rating",
+      "status": 200,
+      "durationMs": 15,
+      "body": {
+        "success": true,
+        "count": 2,
+        "total": 2,
+        "page": 1,
+        "totalPages": 1,
+        "data": [
+          {
+            "_id": "69d63119ab7c6696f1352850",
+            "name": "Imran Shaikh",
+            "serviceId": "69d63119ab7c6696f135282e",
+            "rating": 4.8,
+            "price": 500,
+            "location": "Navi Mumbai",
+            "skills": [
+              "AC Gas Refill",
+              "Cooling Issue",
+              "Compressor Check"
+            ],
+            "reviews": [
+              {
+                "user": "Rina",
+                "comment": "AC cooling restored perfectly",
+                "rating": 5,
+                "_id": "69d63119ab7c6696f1352851"
+              },
+              {
+                "user": "Harsh",
+                "comment": "Expert in AC servicing",
+                "rating": 5,
+                "_id": "69d63119ab7c6696f1352852"
+              }
+            ],
+            "availableSlots": [
+              {
+                "date": "2026-04-10",
+                "timeSlots": [
+                  "10:00 AM",
+                  "12:00 PM",
+                  "2:00 PM",
+                  "4:00 PM"
+                ],
+                "_id": "69d63119ab7c6696f1352853"
+              },
+              {
+                "date": "2026-04-11",
+                "timeSlots": [
+                  "10:00 AM",
+                  "12:00 PM",
+                  "2:00 PM",
+                  "4:00 PM"
+                ],
+                "_id": "69d63119ab7c6696f1352854"
+              }
+            ],
+            "createdAt": "2026-04-08T10:42:33.235Z",
+            "updatedAt": "2026-04-08T10:42:33.235Z"
+          },
+          {
+            "_id": "69d63119ab7c6696f1352855",
+            "name": "Anil Gaikwad",
+            "serviceId": "69d63119ab7c6696f135282e",
+            "rating": 4.1,
+            "price": 260,
+            "location": "Mumbai",
+            "skills": [
+              "AC Filter Cleaning",
+              "General Service",
+              "Water Leakage Fix"
+            ],
+            "reviews": [
+              {
+                "user": "Komal",
+                "comment": "Did proper servicing",
+                "rating": 4,
+                "_id": "69d63119ab7c6696f1352856"
+              },
+              {
+                "user": "Nilesh",
+                "comment": "Reasonable and helpful",
+                "rating": 4,
+                "_id": "69d63119ab7c6696f1352857"
+              },
+              {
+                "user": "Ajay",
+                "comment": "Good for regular AC maintenance",
+                "rating": 4,
+                "_id": "69d63119ab7c6696f1352858"
+              }
+            ],
+            "availableSlots": [
+              {
+                "date": "2026-04-10",
+                "timeSlots": [
+                  "10:00 AM",
+                  "12:00 PM",
+                  "2:00 PM",
+                  "4:00 PM"
+                ],
+                "_id": "69d63119ab7c6696f1352859"
+              },
+              {
+                "date": "2026-04-11",
+                "timeSlots": [
+                  "10:00 AM",
+                  "12:00 PM",
+                  "2:00 PM",
+                  "4:00 PM"
+                ],
+                "_id": "69d63119ab7c6696f135285a"
+              }
+            ],
+            "createdAt": "2026-04-08T10:42:33.235Z",
+            "updatedAt": "2026-04-08T10:42:33.235Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Search Workers",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?q=cleaner",
+      "status": 500,
+      "durationMs": 3,
+      "body": {
+        "success": false,
+        "message": "Failed to fetch workers",
+        "error": "Cast to Number failed for value \"{}\" (type Object) at path \"price\" for model \"Worker\""
+      }
+    },
+    {
+      "name": "Slots WorkerA",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers/69d63119ab7c6696f1352850/slots?date=2026-04-11",
+      "status": 200,
+      "durationMs": 16,
+      "body": {
+        "success": true,
+        "data": {
+          "date": "2026-04-11",
+          "availableSlots": [
+            "10:00 AM",
+            "12:00 PM",
+            "2:00 PM",
+            "4:00 PM"
+          ],
+          "bookedSlots": [],
+          "openSlots": [
+            "10:00 AM",
+            "12:00 PM",
+            "2:00 PM",
+            "4:00 PM"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Slots WorkerB",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers/69d63119ab7c6696f1352855/slots?date=2026-04-11",
+      "status": 200,
+      "durationMs": 15,
+      "body": {
+        "success": true,
+        "data": {
+          "date": "2026-04-11",
+          "availableSlots": [
+            "10:00 AM",
+            "12:00 PM",
+            "2:00 PM",
+            "4:00 PM"
+          ],
+          "bookedSlots": [],
+          "openSlots": [
+            "10:00 AM",
+            "12:00 PM",
+            "2:00 PM",
+            "4:00 PM"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Valid Booking",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 11,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Invalid Slot Booking",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 4,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Duplicate Booking 1",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 5,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Duplicate Booking 2",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 4,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Slots After Duplicate",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers/69d63119ab7c6696f1352850/slots?date=2026-04-11",
+      "status": "ERROR",
+      "durationMs": 4,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Lifecycle Create",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 3,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Favorites Add",
+      "method": "POST",
+      "url": "http://localhost:5000/api/users/favorites",
+      "status": "ERROR",
+      "durationMs": 4,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Favorites Remove",
+      "method": "POST",
+      "url": "http://localhost:5000/api/users/favorites",
+      "status": "ERROR",
+      "durationMs": 3,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Favorites Add Again",
+      "method": "POST",
+      "url": "http://localhost:5000/api/users/favorites",
+      "status": "ERROR",
+      "durationMs": 3,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Favorites List",
+      "method": "GET",
+      "url": "http://localhost:5000/api/users/favorites/12345",
+      "status": "ERROR",
+      "durationMs": 3,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Invalid ObjectId",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers/detail/invalid-object-id",
+      "status": "ERROR",
+      "durationMs": 2,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Missing Fields Booking",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 2,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Empty Query Params",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?q=&page=&limit=",
+      "status": "ERROR",
+      "durationMs": 2,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Negative Page Limit",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=-2&limit=-10",
+      "status": "ERROR",
+      "durationMs": 2,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Large Limit",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=1000",
+      "status": "ERROR",
+      "durationMs": 2,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Health After Edge",
+      "method": "GET",
+      "url": "http://localhost:5000/api/services",
+      "status": "ERROR",
+      "durationMs": 2,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 1",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 2",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 3",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 4",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 5",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 6",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 7",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 8",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 9",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 52,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 10",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 11",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 12",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 13",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 14",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 52,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 15",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 16",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 17",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 18",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 19",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 20",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 21",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 22",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 23",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 24",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 50,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 25",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 51,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 26",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 46,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 27",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 44,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 28",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 43,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 29",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 44,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 30",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 43,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 31",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 43,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 32",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 43,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 33",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 42,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 34",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 43,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 35",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 42,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 36",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 42,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 37",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 42,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 38",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 42,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 39",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 41,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 40",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 41,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 41",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 40,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 42",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 41,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 43",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 41,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 44",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 40,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 45",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 40,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 46",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 40,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 47",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 41,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 48",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 40,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 49",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 39,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Perf Workers 50",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?page=1&limit=10&sort=rating",
+      "status": "ERROR",
+      "durationMs": 39,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 2",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 9,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 1",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 11,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 4",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 13,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 3",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 13,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 5",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 13,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 6",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 13,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 8",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 15,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 7",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 15,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 9",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 16,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 10",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 16,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 11",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 17,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 12",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 16,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 13",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 16,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 14",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 16,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 16",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 17,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 15",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 17,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 17",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 17,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 18",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 16,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 19",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 17,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Stress Booking 20",
+      "method": "POST",
+      "url": "http://localhost:5000/api/bookings",
+      "status": "ERROR",
+      "durationMs": 17,
+      "body": "TypeError: fetch failed"
+    },
+    {
+      "name": "Mongo Injection Probe",
+      "method": "GET",
+      "url": "http://localhost:5000/api/workers?q[$ne]=x&page=1&limit=5",
+      "status": "ERROR",
+      "durationMs": 2,
+      "body": "TypeError: fetch failed"
+    }
+  ]
+}

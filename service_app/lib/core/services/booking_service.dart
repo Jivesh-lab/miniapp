@@ -29,4 +29,27 @@ class BookingService {
 
     return data.map(BookingModel.fromJson).toList();
   }
+
+  Future<BookingModel> updateBookingStatus({
+    required String id,
+    required String status,
+  }) async {
+    final response = await http.patch(
+      ApiService.uri('/bookings/$id'),
+      headers: ApiService.headers,
+      body: jsonEncode({'status': status}),
+    );
+
+    final body = ApiService.parseResponse(response);
+    return BookingModel.fromJson(body['data'] as Map<String, dynamic>);
+  }
+
+  Future<void> cancelBooking(String id) async {
+    final response = await http.delete(
+      ApiService.uri('/bookings/$id'),
+      headers: ApiService.headers,
+    );
+
+    ApiService.parseResponse(response);
+  }
 }

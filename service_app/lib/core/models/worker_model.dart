@@ -1,3 +1,27 @@
+class WorkerSlot {
+  final String date;
+  final List<String> timeSlots;
+
+  WorkerSlot({
+    required this.date,
+    required this.timeSlots,
+  });
+
+  factory WorkerSlot.fromJson(Map<String, dynamic> json) {
+    return WorkerSlot(
+      date: (json['date'] ?? '').toString(),
+      timeSlots: List<String>.from((json['timeSlots'] ?? <dynamic>[]) as List<dynamic>),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'date': date,
+      'timeSlots': timeSlots,
+    };
+  }
+}
+
 class WorkerModel {
   final String id;
   final String name;
@@ -11,6 +35,7 @@ class WorkerModel {
   final List<String> skills;
   final String profileDescription;
   final List<Map<String, dynamic>> aboutReviews;
+  final List<WorkerSlot> availableSlots;
 
   WorkerModel({
     required this.id,
@@ -25,6 +50,7 @@ class WorkerModel {
     required this.skills,
     required this.profileDescription,
     required this.aboutReviews,
+    required this.availableSlots,
   });
 
   // Convert to JSON
@@ -42,6 +68,7 @@ class WorkerModel {
       'skills': skills,
       'profileDescription': profileDescription,
       'aboutReviews': aboutReviews,
+      'availableSlots': availableSlots.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -84,6 +111,9 @@ class WorkerModel {
       skills: List<String>.from((json['skills'] ?? <dynamic>[]) as List<dynamic>),
       profileDescription: (json['profileDescription'] ?? 'No description available').toString(),
       aboutReviews: parsedReviews,
+      availableSlots: ((json['availableSlots'] ?? <dynamic>[]) as List<dynamic>)
+          .map((item) => WorkerSlot.fromJson(item as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -101,6 +131,7 @@ class WorkerModel {
     List<String>? skills,
     String? profileDescription,
     List<Map<String, dynamic>>? aboutReviews,
+    List<WorkerSlot>? availableSlots,
   }) {
     return WorkerModel(
       id: id ?? this.id,
@@ -115,6 +146,7 @@ class WorkerModel {
       skills: skills ?? this.skills,
       profileDescription: profileDescription ?? this.profileDescription,
       aboutReviews: aboutReviews ?? this.aboutReviews,
+      availableSlots: availableSlots ?? this.availableSlots,
     );
   }
 

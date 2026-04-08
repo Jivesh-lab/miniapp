@@ -1,4 +1,4 @@
-enum BookingStatus { pending, completed, cancelled }
+enum BookingStatus { pending, confirmed, completed, cancelled }
 
 class BookingModel {
   final String id;
@@ -105,6 +105,7 @@ class BookingModel {
 
   // Helper methods
   bool get isPending => status == BookingStatus.pending;
+  bool get isConfirmed => status == BookingStatus.confirmed;
   bool get isCompleted => status == BookingStatus.completed;
   bool get isCancelled => status == BookingStatus.cancelled;
 
@@ -115,6 +116,8 @@ class BookingModel {
     switch (status) {
       case BookingStatus.pending:
         return 'Pending';
+      case BookingStatus.confirmed:
+        return 'Confirmed';
       case BookingStatus.completed:
         return 'Completed';
       case BookingStatus.cancelled:
@@ -128,6 +131,9 @@ class BookingModel {
       case 'BookingStatus.pending':
       case 'pending':
         return BookingStatus.pending;
+      case 'confirmed':
+      case 'BookingStatus.confirmed':
+        return BookingStatus.confirmed;
       case 'BookingStatus.completed':
       case 'completed':
         return BookingStatus.completed;

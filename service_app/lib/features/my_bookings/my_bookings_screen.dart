@@ -47,7 +47,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       if (!mounted) return;
       setState(() {
         ongoingBookings = allBookings
-            .where((b) => b.status == BookingStatus.pending)
+            .where(
+              (b) => b.status == BookingStatus.pending || b.status == BookingStatus.confirmed,
+            )
             .toList()
           ..sort((a, b) => b.date.compareTo(a.date));
 
@@ -210,12 +212,30 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       ),
       itemCount: bookings.length,
       itemBuilder: (context, index) {
+        final booking = bookings[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: BookingCard(booking: bookings[index]),
+          child: BookingCard(
+            booking: booking,
+            onCancel: booking.status == BookingStatus.pending
+                ? () => _cancelBooking(booking.id)
+                : null,
+          ),
         );
       },
     );
+  }
+
+  Future<void> _cancelBooking(String id) async {
+    try {
+      await _bookingService.cancelBooking(id);
+      await _fetchBookings();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    }
   }
 
   Widget _buildEmptyState(bool isMobile) {

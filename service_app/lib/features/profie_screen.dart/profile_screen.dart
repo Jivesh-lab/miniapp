@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/user_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -10,6 +11,9 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final UserService _userService = UserService();
+  static const String _userId = '12345';
+
   // User data (dummy)
   final String userName = 'John Doe';
   final String userPhone = '+91 98765 43210';
@@ -55,6 +59,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onTap: () {
                 Navigator.pushNamed(context, '/my-bookings');
               },
+            ),
+            const SizedBox(height: 12),
+            _buildOptionItem(
+              icon: Icons.favorite_border,
+              title: 'Favorite Workers',
+              subtitle: 'View saved workers',
+              onTap: _showFavorites,
             ),
             const SizedBox(height: 12),
             _buildOptionItem(
@@ -407,6 +418,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+  }
+
+  Future<void> _showFavorites() async {
+    try {
+      final favorites = await _userService.getFavoriteWorkers(_userId);
+      if (!mounted) return;
+
+      showModalBottomSheet(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) {
+          if (favorites.isEmpty) {
+            return const SizedBox(
+              height: 180,
+              child: Center(child: Text('No favorite workers yet')),
+            );
+          }
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            shrinkWrap: true,
+            itemCount: favorites.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final worker = favorites[index];
+              return ListTile(
+                tileColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.grey.shade200),
+                ),
+                title: Text(worker.name),
+                subtitle: Text('₹${worker.pricePerHour} • ${worker.rating}★'),
+              );
+            },
+          );
+        },
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to fetch favorites')),
+      );
+    }
   }
 
   Widget _buildEditField(String label, String value) {

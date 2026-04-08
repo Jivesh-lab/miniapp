@@ -3,15 +3,18 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/models/worker_model.dart';
 import '../../core/services/worker_service.dart';
+import '../../core/widgets/search_bar_widget.dart';
 import '../../core/widgets/worker_card.dart';
 import 'worker_detail_screen.dart';
 
 class WorkerListScreen extends StatefulWidget {
-  final String? serviceType;
+  final String? serviceId;
+  final String? serviceName;
 
   const WorkerListScreen({
     Key? key,
-    this.serviceType,
+    this.serviceId,
+    this.serviceName,
   }) : super(key: key);
 
   @override
@@ -20,6 +23,9 @@ class WorkerListScreen extends StatefulWidget {
 
 class _WorkerListScreenState extends State<WorkerListScreen> {
   String _selectedSort = 'nearest';
+  String _searchQuery = '';
+  double _minRating = 0;
+  RangeValues _priceRange = const RangeValues(100, 500);
   final WorkerService _workerService = WorkerService();
   bool _isLoading = true;
   String? _errorMessage;
@@ -39,14 +45,19 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
     });
 
     try {
-      final serviceId = (widget.serviceType ?? '').trim();
       final sort = _selectedSort == 'rating' || _selectedSort == 'price'
           ? _selectedSort
           : null;
 
       final workers = await _workerService.getWorkers(
-        serviceId: serviceId,
+        serviceId: (widget.serviceId ?? '').trim(),
         sort: sort,
+        q: _searchQuery,
+        rating: _minRating > 0 ? _minRating : null,
+        minPrice: _priceRange.start.round(),
+        maxPrice: _priceRange.end.round(),
+        page: 1,
+        limit: 20,
       );
 
       if (!mounted) return;
@@ -73,6 +84,27 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
       appBar: _buildAppBar(isMobile),
       body: Column(
         children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(isMobile ? 16 : 24, 12, isMobile ? 16 : 24, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SearchBarWidget(
+                    hintText: 'Search workers or skills',
+                    onChanged: (value) {
+                      _searchQuery = value;
+                      _fetchWorkers();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _openFilterModal,
+                  icon: const Icon(Icons.tune),
+                ),
+              ],
+            ),
+          ),
           // Filter/Sort Section
           Padding(
             padding: EdgeInsets.symmetric(
@@ -183,7 +215,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
           ),
         ),
         title: Text(
-          '${widget.serviceType ?? 'Service'} Workers',
+          '${widget.serviceName ?? 'Service'} Workers',
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -244,6 +276,70 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
           );
         },
       ),
+    );
+  }
+
+  void _openFilterModal() {
+    RangeValues tempRange = _priceRange;
+    double tempRating = _minRating;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Filters', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 18)),
+                  const SizedBox(height: 16),
+                  Text('Minimum Rating: ${tempRating.toStringAsFixed(1)}'),
+                  Slider(
+                    value: tempRating,
+                    min: 0,
+                    max: 5,
+                    divisions: 10,
+                    onChanged: (value) {
+                      setModalState(() => tempRating = value);
+                    },
+                  ),
+                  Text('Price Range: ₹${tempRange.start.round()} - ₹${tempRange.end.round()}'),
+                  RangeSlider(
+                    values: tempRange,
+                    min: 100,
+                    max: 1000,
+                    divisions: 18,
+                    onChanged: (value) {
+                      setModalState(() => tempRange = value);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _minRating = tempRating;
+                          _priceRange = tempRange;
+                        });
+                        Navigator.pop(context);
+                        _fetchWorkers();
+                      },
+                      child: const Text('Apply Filters'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

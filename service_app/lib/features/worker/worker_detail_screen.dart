@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/models/worker_model.dart';
+import '../../core/services/user_service.dart';
 import '../../core/services/worker_service.dart';
 
 class WorkerDetailScreen extends StatefulWidget {
@@ -19,6 +20,8 @@ class WorkerDetailScreen extends StatefulWidget {
 class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
   bool _isFavorite = false;
   final WorkerService _workerService = WorkerService();
+  final UserService _userService = UserService();
+  static const String _userId = '12345';
   WorkerModel? _worker;
   bool _isLoading = true;
   String? _errorMessage;
@@ -169,7 +172,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
         actions: [
           GestureDetector(
             onTap: () {
-              setState(() => _isFavorite = !_isFavorite);
+              _toggleFavorite();
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -192,6 +195,23 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _toggleFavorite() async {
+    try {
+      final isFavorite = await _userService.toggleFavorite(
+        userId: _userId,
+        workerId: widget.workerId,
+      );
+
+      if (!mounted) return;
+      setState(() => _isFavorite = isFavorite);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update favorite')),
+      );
+    }
   }
 
   Widget _buildProfileSection(bool isMobile) {

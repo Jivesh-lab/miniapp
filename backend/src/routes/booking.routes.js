@@ -3,16 +3,10 @@ import {
   createBooking,
   getBookings,
   updateBookingStatus,
+  deleteBooking,
 } from "../controllers/booking.controller.js";
 
 const router = express.Router();
-
-const deleteBooking = async (req, res) => {
-  return res.status(501).json({
-    success: false,
-    message: "deleteBooking controller not implemented",
-  });
-};
 
 // POST /api/bookings
 router.post("/", createBooking);

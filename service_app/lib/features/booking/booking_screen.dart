@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/models/worker_model.dart';
 import '../../core/services/booking_service.dart';
+import '../../core/services/worker_service.dart';
 
 class BookingScreen extends StatefulWidget {
   final WorkerModel worker;
@@ -21,21 +22,19 @@ class _BookingScreenState extends State<BookingScreen> {
   String? _selectedTimeSlot;
   late TextEditingController _addressController;
   final BookingService _bookingService = BookingService();
+  final WorkerService _workerService = WorkerService();
   bool _isSubmitting = false;
-
-  final List<String> timeSlots = [
-    '10:00 AM',
-    '12:00 PM',
-    '2:00 PM',
-    '4:00 PM',
-    '6:00 PM',
-  ];
+  bool _isLoadingSlots = true;
+  String? _slotError;
+  List<String> _availableSlots = [];
+  List<String> _bookedSlots = [];
 
   @override
   void initState() {
     super.initState();
     _selectedDate = DateTime.now().add(const Duration(days: 1));
     _addressController = TextEditingController();
+    _loadSlotsForDate();
   }
 
   @override
@@ -297,6 +296,24 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildTimeSlotsSection(bool isMobile, double padding) {
+    if (_isLoadingSlots) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_slotError != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _slotError!,
+            style: GoogleFonts.inter(color: Colors.red.shade600),
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton(onPressed: _loadSlotsForDate, child: const Text('Retry')),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -309,55 +326,66 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: timeSlots.map((slot) {
-            final isSelected = _selectedTimeSlot == slot;
-            return GestureDetector(
-              onTap: () {
-                setState(() => _selectedTimeSlot = slot);
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isSelected ? AppColors.primary : Colors.grey.shade200,
-                    width: 1.5,
+        if (_availableSlots.isEmpty)
+          Text(
+            'No slots available for selected date',
+            style: GoogleFonts.inter(color: Colors.grey.shade600),
+          )
+        else
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _availableSlots.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 2.5,
+            ),
+            itemBuilder: (context, index) {
+              final slot = _availableSlots[index];
+              final isBooked = _bookedSlots.contains(slot);
+              final isSelected = _selectedTimeSlot == slot;
+
+              return GestureDetector(
+                onTap: isBooked
+                    ? null
+                    : () {
+                        setState(() => _selectedTimeSlot = slot);
+                      },
+                child: Container(
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isBooked
+                        ? Colors.grey.shade200
+                        : isSelected
+                            ? AppColors.primary
+                            : Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isBooked
+                          ? Colors.grey.shade300
+                          : isSelected
+                              ? AppColors.primary
+                              : Colors.grey.shade200,
+                    ),
                   ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.08),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                ),
-                child: Text(
-                  slot,
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : const Color(0xFF1F2937),
+                  child: Text(
+                    slot,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isBooked
+                          ? Colors.grey.shade500
+                          : isSelected
+                              ? Colors.white
+                              : const Color(0xFF1F2937),
+                    ),
                   ),
                 ),
-              ),
-            );
-          }).toList(),
-        ),
+              );
+            },
+          ),
       ],
     );
   }
@@ -531,7 +559,40 @@ class _BookingScreenState extends State<BookingScreen> {
     );
 
     if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+        _selectedDate = picked;
+        _selectedTimeSlot = null;
+      });
+      _loadSlotsForDate();
+    }
+  }
+
+  Future<void> _loadSlotsForDate() async {
+    setState(() {
+      _isLoadingSlots = true;
+      _slotError = null;
+    });
+
+    try {
+      final date = _selectedDate.toIso8601String().split('T').first;
+      final slots = await _workerService.getWorkerSlots(
+        workerId: widget.worker.id,
+        date: date,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _availableSlots = List<String>.from((slots['availableSlots'] ?? <dynamic>[]) as List<dynamic>);
+        _bookedSlots = List<String>.from((slots['bookedSlots'] ?? <dynamic>[]) as List<dynamic>);
+        _isLoadingSlots = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _slotError = e.toString().replaceFirst('Exception: ', '');
+        _isLoadingSlots = false;
+      });
     }
   }
 

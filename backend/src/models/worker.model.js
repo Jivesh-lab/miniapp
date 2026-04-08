@@ -11,7 +11,6 @@ const workerSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Service",
       required: true,
-      index: true,
     },
     rating: {
       type: Number,
@@ -56,11 +55,31 @@ const workerSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    availableSlots: {
+      type: [
+        {
+          date: {
+            type: String,
+            required: true,
+            trim: true,
+          },
+          timeSlots: {
+            type: [String],
+            default: [],
+          },
+        },
+      ],
+      default: [],
+    },
   },
   {
     timestamps: true,
     versionKey: false,
   }
 );
+
+workerSchema.index({ serviceId: 1 });
+workerSchema.index({ rating: -1 });
+workerSchema.index({ price: 1 });
 
 export default mongoose.model("Worker", workerSchema);

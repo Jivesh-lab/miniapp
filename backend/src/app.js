@@ -4,6 +4,7 @@ import workerRoutes from "./routes/worker.routes.js";
 import bookingRoutes from "./routes/booking.routes.js";
 import serviceRoutes from "./routes/service.routes.js";
 import userRoutes from "./routes/user.routes.js";
+import { errorHandler, notFoundHandler } from "./middleware/error.middleware.js";
 
 const app = express();
 
@@ -22,19 +23,7 @@ app.get("/", (req, res) => {
   });
 });
 
-app.use((req, res, next) => {
-  const error = new Error("Route not found");
-  error.statusCode = 404;
-  next(error);
-});
-
-app.use((err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-
-  res.status(statusCode).json({
-    success: false,
-    message: err.message || "Internal server error",
-  });
-});
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 export default app;

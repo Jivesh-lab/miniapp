@@ -6,7 +6,6 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      index: true,
     },
     workerId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -30,8 +29,8 @@ const bookingSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["ongoing", "completed"],
-      default: "ongoing",
+      enum: ["pending", "confirmed", "completed", "cancelled"],
+      default: "pending",
     },
   },
   {
@@ -39,5 +38,9 @@ const bookingSchema = new mongoose.Schema(
     versionKey: false,
   }
 );
+
+bookingSchema.index({ workerId: 1, date: 1, time: 1 }, { unique: true });
+bookingSchema.index({ userId: 1 });
+bookingSchema.index({ workerId: 1 });
 
 export default mongoose.model("Booking", bookingSchema);

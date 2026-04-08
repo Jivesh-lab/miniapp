@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/service_service.dart';
 import '../../core/widgets/category_card.dart';
 import '../../core/widgets/search_bar_widget.dart';
 import '../worker/worker_list_screen.dart';
@@ -14,29 +15,38 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedNavIndex = 0;
+  final ServiceService _serviceService = ServiceService();
+  bool _isLoadingServices = true;
+  String? _serviceError;
+  List<ServiceItem> _services = [];
 
-  final List<Map<String, dynamic>> categories = [
-    {
-      'icon': Icons.plumbing,
-      'label': 'Plumber',
-      'color': 0xFF3B82F6,
-    },
-    {
-      'icon': Icons.flash_on,
-      'label': 'Electrician',
-      'color': 0xFFF59E0B,
-    },
-    {
-      'icon': Icons.cleaning_services,
-      'label': 'Cleaner',
-      'color': 0xFF8B5CF6,
-    },
-    {
-      'icon': Icons.ac_unit,
-      'label': 'AC Repair',
-      'color': 0xFF06B6D4,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchServices();
+  }
+
+  Future<void> _fetchServices() async {
+    setState(() {
+      _isLoadingServices = true;
+      _serviceError = null;
+    });
+
+    try {
+      final data = await _serviceService.getServices();
+      if (!mounted) return;
+      setState(() {
+        _services = data;
+        _isLoadingServices = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _serviceError = e.toString().replaceFirst('Exception: ', '');
+        _isLoadingServices = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,28 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 horizontal: isMobile ? 16 : 24,
                 vertical: 8,
               ),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: isMobile ? 2 : 4,
-                  crossAxisSpacing: isMobile ? 12 : 16,
-                  mainAxisSpacing: isMobile ? 12 : 16,
-                  childAspectRatio: 1,
-                ),
-                itemCount: categories.length,
-                itemBuilder: (context, index) {
-                  final category = categories[index];
-                  return CategoryCard(
-                    icon: category['icon'],
-                    label: category['label'],
-                    color: Color(category['color']),
-                    onTap: () {
-                      _navigateToWorkerList(context, category['label']);
-                    },
-                  );
-                },
-              ),
+              child: _buildServicesGrid(isMobile),
             ),
             // Featured Section
             Padding(
@@ -154,6 +143,71 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: _buildBottomNavBar(),
     );
+  }
+
+  Widget _buildServicesGrid(bool isMobile) {
+    if (_isLoadingServices) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_serviceError != null) {
+      return Center(
+        child: Column(
+          children: [
+            Text(
+              _serviceError!,
+              style: GoogleFonts.inter(color: Colors.red.shade600),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: _fetchServices,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: isMobile ? 2 : 4,
+        crossAxisSpacing: isMobile ? 12 : 16,
+        mainAxisSpacing: isMobile ? 12 : 16,
+        childAspectRatio: 1,
+      ),
+      itemCount: _services.length,
+      itemBuilder: (context, index) {
+        final service = _services[index];
+        return CategoryCard(
+          icon: _iconForService(service.name),
+          label: service.name,
+          color: _colorForService(service.name),
+          onTap: () {
+            _navigateToWorkerList(context, service.id, service.name);
+          },
+        );
+      },
+    );
+  }
+
+  IconData _iconForService(String name) {
+    final key = name.toLowerCase();
+    if (key.contains('plumb')) return Icons.plumbing;
+    if (key.contains('electric')) return Icons.flash_on;
+    if (key.contains('clean')) return Icons.cleaning_services;
+    if (key.contains('ac')) return Icons.ac_unit;
+    return Icons.home_repair_service;
+  }
+
+  Color _colorForService(String name) {
+    final key = name.toLowerCase();
+    if (key.contains('plumb')) return const Color(0xFF3B82F6);
+    if (key.contains('electric')) return const Color(0xFFF59E0B);
+    if (key.contains('clean')) return const Color(0xFF8B5CF6);
+    if (key.contains('ac')) return const Color(0xFF06B6D4);
+    return const Color(0xFF10B981);
   }
 
   PreferredSize _buildAppBar() {
@@ -312,11 +366,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _navigateToWorkerList(BuildContext context, String serviceType) {
+  void _navigateToWorkerList(BuildContext context, String serviceId, String serviceName) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => WorkerListScreen(serviceType: serviceType),
+        builder: (_) => WorkerListScreen(serviceId: serviceId, serviceName: serviceName),
       ),
     );
   }

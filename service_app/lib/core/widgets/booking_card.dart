@@ -6,11 +6,13 @@ import '../models/booking_model.dart';
 class BookingCard extends StatelessWidget {
   final BookingModel booking;
   final VoidCallback? onTap;
+  final VoidCallback? onCancel;
 
   const BookingCard({
     Key? key,
     required this.booking,
     this.onTap,
+    this.onCancel,
   }) : super(key: key);
 
   @override
@@ -147,11 +149,24 @@ class BookingCard extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 14,
-                    color: Colors.grey.shade400,
-                  ),
+                  if (onCancel != null)
+                    TextButton(
+                      onPressed: onCancel,
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red,
+                        ),
+                      ),
+                    )
+                  else
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14,
+                      color: Colors.grey.shade400,
+                    ),
                 ],
               ),
             ),
@@ -162,15 +177,49 @@ class BookingCard extends StatelessWidget {
   }
 
   Widget _buildStatusBadge() {
-    final isCompleted = booking.status == BookingStatus.completed;
+    Color bg;
+    Color border;
+    Color dot;
+    Color text;
+    String label;
+
+    switch (booking.status) {
+      case BookingStatus.pending:
+        bg = Colors.orange.shade50;
+        border = Colors.orange.shade200;
+        dot = Colors.orange;
+        text = Colors.orange.shade700;
+        label = 'Pending';
+        break;
+      case BookingStatus.confirmed:
+        bg = Colors.blue.shade50;
+        border = Colors.blue.shade200;
+        dot = Colors.blue;
+        text = Colors.blue.shade700;
+        label = 'Confirmed';
+        break;
+      case BookingStatus.completed:
+        bg = Colors.green.shade50;
+        border = Colors.green.shade200;
+        dot = Colors.green;
+        text = Colors.green.shade700;
+        label = 'Completed';
+        break;
+      case BookingStatus.cancelled:
+        bg = Colors.red.shade50;
+        border = Colors.red.shade200;
+        dot = Colors.red;
+        text = Colors.red.shade700;
+        label = 'Cancelled';
+        break;
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: isCompleted ? Colors.green.shade50 : Colors.blue.shade50,
+        color: bg,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isCompleted ? Colors.green.shade200 : Colors.blue.shade200,
-        ),
+        border: Border.all(color: border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -179,17 +228,17 @@ class BookingCard extends StatelessWidget {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: isCompleted ? Colors.green : Colors.blue,
+              color: dot,
               borderRadius: BorderRadius.circular(3),
             ),
           ),
           const SizedBox(width: 6),
           Text(
-            isCompleted ? 'Completed' : 'Pending',
+            label,
             style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: isCompleted ? Colors.green.shade700 : Colors.blue.shade700,
+              color: text,
             ),
           ),
         ],
