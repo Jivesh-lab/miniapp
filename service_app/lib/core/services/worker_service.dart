@@ -153,6 +153,16 @@ class WorkerService {
     );
 
     final body = ApiService.parseResponse(response);
-    return (body['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
+
+    // Supports current endpoint shape and older nested `data` shape.
+    if (body['data'] is Map<String, dynamic>) {
+      return (body['data'] as Map<String, dynamic>?) ?? <String, dynamic>{};
+    }
+
+    return {
+      'availableSlots': body['availableSlots'] ?? <dynamic>[],
+      'bookedSlots': body['bookedSlots'] ?? <dynamic>[],
+      'allSlots': body['allSlots'] ?? body['availableSlots'] ?? <dynamic>[],
+    };
   }
 }

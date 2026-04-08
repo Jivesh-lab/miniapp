@@ -52,4 +52,34 @@ class BookingService {
 
     ApiService.parseResponse(response);
   }
+
+  Future<BookingModel> rateBooking({
+    required String bookingId,
+    int? rating,
+    String? comment,
+    bool skip = false,
+  }) async {
+    final payload = <String, dynamic>{
+      'skip': skip,
+    };
+
+    if (!skip) {
+      payload['rating'] = rating;
+      final normalizedComment = (comment ?? '').trim();
+      if (normalizedComment.isNotEmpty) {
+        payload['comment'] = normalizedComment;
+      }
+    }
+
+    final response = await http.post(
+      ApiService.uri('/bookings/$bookingId/rate'),
+      headers: ApiService.headers,
+      body: jsonEncode(payload),
+    );
+
+    final body = ApiService.parseResponse(response);
+    final data = body['data'] as Map<String, dynamic>;
+    final bookingJson = (data['booking'] ?? data) as Map<String, dynamic>;
+    return BookingModel.fromJson(bookingJson);
+  }
 }

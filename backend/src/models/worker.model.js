@@ -18,6 +18,16 @@ const workerSchema = new mongoose.Schema(
       min: 0,
       max: 5,
     },
+    ratingCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    ratingSum: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     price: {
       type: Number,
       required: true,
@@ -35,21 +45,26 @@ const workerSchema = new mongoose.Schema(
     reviews: {
       type: [
         {
-          user: {
+          userId: {
             type: String,
             required: true,
             trim: true,
           },
           comment: {
             type: String,
-            required: true,
             trim: true,
+            default: "",
+            maxlength: 500,
           },
           rating: {
             type: Number,
             required: true,
             min: 1,
             max: 5,
+          },
+          createdAt: {
+            type: Date,
+            default: Date.now,
           },
         },
       ],

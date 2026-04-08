@@ -198,6 +198,13 @@ class BookingCard extends StatelessWidget {
         text = Colors.blue.shade700;
         label = 'Confirmed';
         break;
+      case BookingStatus.inProgress:
+        bg = Colors.purple.shade50;
+        border = Colors.purple.shade200;
+        dot = Colors.purple;
+        text = Colors.purple.shade700;
+        label = 'In Progress';
+        break;
       case BookingStatus.completed:
         bg = Colors.green.shade50;
         border = Colors.green.shade200;

@@ -5,3 +5,5 @@ postman/
 
 backend/.postman/
 backend/postman/
+**/node_modules/
+**/.env

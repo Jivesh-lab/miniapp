@@ -61,8 +61,8 @@ const seedDatabase = async () => {
         location: "Navi Mumbai",
         skills: ["Pipe Leakage", "Bathroom Fittings", "Tank Cleaning"],
         reviews: [
-          { user: "Amit", comment: "Very quick and professional", rating: 5 },
-          { user: "Neha", comment: "Solved leakage issue perfectly", rating: 4 },
+          { userId: "Amit", comment: "Very quick and professional", rating: 5 },
+          { userId: "Neha", comment: "Solved leakage issue perfectly", rating: 4 },
         ],
         availableSlots: defaultSlots,
       },
@@ -74,9 +74,9 @@ const seedDatabase = async () => {
         location: "Mumbai",
         skills: ["Tap Repair", "Drain Cleaning", "Pipeline Maintenance"],
         reviews: [
-          { user: "Pooja", comment: "Affordable and good service", rating: 4 },
-          { user: "Rohit", comment: "Came on time and fixed quickly", rating: 4 },
-          { user: "Rahul", comment: "Good work quality", rating: 5 },
+          { userId: "Pooja", comment: "Affordable and good service", rating: 4 },
+          { userId: "Rohit", comment: "Came on time and fixed quickly", rating: 4 },
+          { userId: "Rahul", comment: "Good work quality", rating: 5 },
         ],
         availableSlots: defaultSlots,
       },
@@ -88,8 +88,8 @@ const seedDatabase = async () => {
         location: "Navi Mumbai",
         skills: ["Wiring", "MCB Installation", "Inverter Setup"],
         reviews: [
-          { user: "Kiran", comment: "Excellent electrical knowledge", rating: 5 },
-          { user: "Seema", comment: "Very safe and neat work", rating: 5 },
+          { userId: "Kiran", comment: "Excellent electrical knowledge", rating: 5 },
+          { userId: "Seema", comment: "Very safe and neat work", rating: 5 },
         ],
         availableSlots: defaultSlots,
       },
@@ -101,9 +101,9 @@ const seedDatabase = async () => {
         location: "Mumbai",
         skills: ["Fan Repair", "Switch Board", "Light Installation"],
         reviews: [
-          { user: "Deepak", comment: "Fixed fan issue in one visit", rating: 4 },
-          { user: "Monika", comment: "Good behavior and service", rating: 4 },
-          { user: "Anita", comment: "Recommended electrician", rating: 5 },
+          { userId: "Deepak", comment: "Fixed fan issue in one visit", rating: 4 },
+          { userId: "Monika", comment: "Good behavior and service", rating: 4 },
+          { userId: "Anita", comment: "Recommended electrician", rating: 5 },
         ],
         availableSlots: defaultSlots,
       },
@@ -115,8 +115,8 @@ const seedDatabase = async () => {
         location: "Navi Mumbai",
         skills: ["Home Deep Cleaning", "Kitchen Cleaning", "Bathroom Sanitization"],
         reviews: [
-          { user: "Sakshi", comment: "Very clean finishing", rating: 5 },
-          { user: "Arjun", comment: "Polite and hardworking", rating: 4 },
+          { userId: "Sakshi", comment: "Very clean finishing", rating: 5 },
+          { userId: "Arjun", comment: "Polite and hardworking", rating: 4 },
         ],
         availableSlots: defaultSlots,
       },
@@ -128,9 +128,9 @@ const seedDatabase = async () => {
         location: "Mumbai",
         skills: ["Sofa Cleaning", "Floor Cleaning", "Dust Removal"],
         reviews: [
-          { user: "Tanya", comment: "Good service at low price", rating: 4 },
-          { user: "Vivek", comment: "House looked fresh and clean", rating: 4 },
-          { user: "Manoj", comment: "Satisfied with cleaning", rating: 5 },
+          { userId: "Tanya", comment: "Good service at low price", rating: 4 },
+          { userId: "Vivek", comment: "House looked fresh and clean", rating: 4 },
+          { userId: "Manoj", comment: "Satisfied with cleaning", rating: 5 },
         ],
         availableSlots: defaultSlots,
       },
@@ -142,8 +142,8 @@ const seedDatabase = async () => {
         location: "Navi Mumbai",
         skills: ["AC Gas Refill", "Cooling Issue", "Compressor Check"],
         reviews: [
-          { user: "Rina", comment: "AC cooling restored perfectly", rating: 5 },
-          { user: "Harsh", comment: "Expert in AC servicing", rating: 5 },
+          { userId: "Rina", comment: "AC cooling restored perfectly", rating: 5 },
+          { userId: "Harsh", comment: "Expert in AC servicing", rating: 5 },
         ],
         availableSlots: defaultSlots,
       },
@@ -155,9 +155,9 @@ const seedDatabase = async () => {
         location: "Mumbai",
         skills: ["AC Filter Cleaning", "General Service", "Water Leakage Fix"],
         reviews: [
-          { user: "Komal", comment: "Did proper servicing", rating: 4 },
-          { user: "Nilesh", comment: "Reasonable and helpful", rating: 4 },
-          { user: "Ajay", comment: "Good for regular AC maintenance", rating: 4 },
+          { userId: "Komal", comment: "Did proper servicing", rating: 4 },
+          { userId: "Nilesh", comment: "Reasonable and helpful", rating: 4 },
+          { userId: "Ajay", comment: "Good for regular AC maintenance", rating: 4 },
         ],
         availableSlots: defaultSlots,
       },
@@ -201,3 +201,4 @@ const seedDatabase = async () => {
 };
 
 seedDatabase();
+

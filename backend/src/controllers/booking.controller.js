@@ -1,9 +1,11 @@
 import Booking from "../models/booking.model.js";
 import Worker from "../models/worker.model.js";
+import mongoose from "mongoose";
 
 const allowedTransitions = {
   pending: ["confirmed", "cancelled"],
-  confirmed: ["completed"],
+  confirmed: ["in-progress", "completed", "cancelled"],
+  "in-progress": ["completed", "cancelled"],
   completed: [],
   cancelled: [],
 };
@@ -120,7 +122,10 @@ export const updateBookingStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    if (!status || !["pending", "confirmed", "completed", "cancelled"].includes(status)) {
+    if (
+      !status ||
+      !["pending", "confirmed", "in-progress", "completed", "cancelled"].includes(status)
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid status",
@@ -197,6 +202,139 @@ export const deleteBooking = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Failed to cancel booking",
+      error: error.message,
+    });
+  }
+};
+
+export const rateBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rating, comment, skip } = req.body ?? {};
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid booking id",
+      });
+    }
+
+    if (comment !== undefined && typeof comment !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "comment must be a string",
+      });
+    }
+
+    const normalizedComment = typeof comment === "string" ? comment.trim() : "";
+    const isSkip = skip === true;
+
+    let normalizedRating;
+    if (!isSkip) {
+      const parsedRating = Number(rating);
+      if (!Number.isInteger(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+        return res.status(400).json({
+          success: false,
+          message: "rating must be an integer between 1 and 5",
+        });
+      }
+      normalizedRating = parsedRating;
+    }
+
+    const booking = await Booking.findById(id)
+      .select("_id userId workerId status isRated")
+      .lean();
+
+    if (!booking) {
+      return res.status(404).json({
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    if (booking.status !== "completed") {
+      return res.status(400).json({
+        success: false,
+        message: "Booking not completed",
+      });
+    }
+
+    if (booking.isRated) {
+      return res.status(400).json({
+        success: false,
+        message: "Already rated",
+      });
+    }
+
+    const bookingUpdate = { isRated: true };
+    if (!isSkip) {
+      bookingUpdate.rating = normalizedRating;
+      bookingUpdate.review = normalizedComment;
+    }
+
+    const updatedBooking = await Booking.findByIdAndUpdate(
+      id,
+      {
+        $set: bookingUpdate,
+      },
+      { new: true, runValidators: true }
+    ).lean();
+
+    if (isSkip) {
+      return res.status(200).json({
+        success: true,
+        message: "Rating skipped successfully",
+        data: updatedBooking,
+      });
+    }
+
+    const reviewEntry = {
+      userId: booking.userId,
+      comment: normalizedComment,
+      rating: normalizedRating,
+      createdAt: new Date(),
+    };
+
+    await Worker.findByIdAndUpdate(booking.workerId, {
+      $push: {
+        reviews: reviewEntry,
+      },
+    });
+
+    const worker = await Worker.findById(booking.workerId);
+
+    if (!worker) {
+      return res.status(404).json({
+        success: false,
+        message: "Worker not found",
+      });
+    }
+
+    const totalRating = worker.reviews.reduce((sum, review) => sum + review.rating, 0);
+    const reviewCount = worker.reviews.length;
+
+    worker.rating = reviewCount ? totalRating / reviewCount : 0;
+    worker.ratingCount = reviewCount;
+    worker.ratingSum = totalRating;
+
+    await worker.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Rating submitted successfully",
+      data: {
+        booking: updatedBooking,
+        worker: {
+          _id: worker._id,
+          rating: worker.rating,
+          ratingCount: worker.ratingCount,
+        },
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to submit rating",
       error: error.message,
     });
   }

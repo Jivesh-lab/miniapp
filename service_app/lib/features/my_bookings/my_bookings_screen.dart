@@ -19,6 +19,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   final BookingService _bookingService = BookingService();
   bool _isLoading = true;
   String? _errorMessage;
+  bool _isRatingDialogVisible = false;
+  final Set<String> _promptedRatingBookingIds = <String>{};
   static const String _userId = 'demo-user-1';
 
   List<BookingModel> ongoingBookings = [];
@@ -48,7 +50,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       setState(() {
         ongoingBookings = allBookings
             .where(
-              (b) => b.status == BookingStatus.pending || b.status == BookingStatus.confirmed,
+              (b) =>
+                  b.status == BookingStatus.pending ||
+                  b.status == BookingStatus.confirmed ||
+                  b.status == BookingStatus.inProgress,
             )
             .toList()
           ..sort((a, b) => b.date.compareTo(a.date));
@@ -60,6 +65,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
         _isLoading = false;
       });
+
+      _promptRatingIfNeeded();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -67,6 +74,165 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
         _isLoading = false;
       });
     }
+  }
+
+  void _promptRatingIfNeeded() {
+    if (!mounted || _isRatingDialogVisible) {
+      return;
+    }
+
+    BookingModel? target;
+    for (final booking in completedBookings) {
+      if (!booking.isRated && !_promptedRatingBookingIds.contains(booking.id)) {
+        target = booking;
+        break;
+      }
+    }
+
+    if (target == null) {
+      return;
+    }
+
+    final targetBooking = target;
+    _isRatingDialogVisible = true;
+    _promptedRatingBookingIds.add(targetBooking.id);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final result = await _showRatingDialog(targetBooking);
+
+      if (!mounted) {
+        return;
+      }
+
+      _isRatingDialogVisible = false;
+
+      if (result == null) {
+        _promptedRatingBookingIds.remove(targetBooking.id);
+        return;
+      }
+
+      try {
+        await _bookingService.rateBooking(
+          bookingId: targetBooking.id,
+          rating: result.rating,
+          comment: result.comment,
+          skip: result.skip,
+        );
+
+        await _fetchBookings();
+      } catch (e) {
+        _promptedRatingBookingIds.remove(targetBooking.id);
+
+        if (!mounted) {
+          return;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+      }
+    });
+  }
+
+  Future<_RatingDialogResult?> _showRatingDialog(BookingModel booking) {
+    int? selectedRating;
+    final commentController = TextEditingController();
+
+    return showDialog<_RatingDialogResult>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(
+                'Rate ${booking.workerName}',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'How was your service experience?',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(5, (index) {
+                        final starValue = index + 1;
+                        final isActive = selectedRating != null && starValue <= selectedRating!;
+
+                        return IconButton(
+                          onPressed: () {
+                            setDialogState(() {
+                              selectedRating = starValue;
+                            });
+                          },
+                          icon: Icon(
+                            isActive ? Icons.star_rounded : Icons.star_border_rounded,
+                            color: isActive ? Colors.amber : Colors.grey.shade400,
+                            size: 30,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: commentController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        hintText: 'Optional comment',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(
+                      const _RatingDialogResult(skip: true),
+                    );
+                  },
+                  child: Text(
+                    'Skip',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: selectedRating == null
+                      ? null
+                      : () {
+                          Navigator.of(context).pop(
+                            _RatingDialogResult(
+                              skip: false,
+                              rating: selectedRating,
+                              comment: commentController.text,
+                            ),
+                          );
+                        },
+                  child: Text(
+                    'Submit',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ).whenComplete(() => commentController.dispose());
   }
 
   @override
@@ -303,4 +469,16 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       ),
     );
   }
+}
+
+class _RatingDialogResult {
+  final bool skip;
+  final int? rating;
+  final String? comment;
+
+  const _RatingDialogResult({
+    required this.skip,
+    this.rating,
+    this.comment,
+  });
 }

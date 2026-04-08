@@ -328,6 +328,41 @@ export const getWorkerAvailableSlots = async (req, res) => {
     const { id } = req.params;
     const { date } = req.query;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid worker id",
+      });
+    }
+
+    if (!date || typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({
+        success: false,
+        message: "date query is required in YYYY-MM-DD format",
+      });
+    }
+
+    const selectedDate = new Date(`${date}T00:00:00.000Z`);
+
+    if (Number.isNaN(selectedDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date",
+      });
+    }
+
+    const today = new Date();
+    const minDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+    const maxDate = new Date(minDate);
+    maxDate.setUTCMonth(maxDate.getUTCMonth() + 2);
+
+    if (selectedDate < minDate || selectedDate > maxDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Date must be within the current 2 months window",
+      });
+    }
+
     const worker = await Worker.findById(id).select("availableSlots").lean();
 
     if (!worker) {
@@ -337,35 +372,25 @@ export const getWorkerAvailableSlots = async (req, res) => {
       });
     }
 
-    if (!date) {
-      return res.status(200).json({
-        success: true,
-        data: worker.availableSlots,
-      });
-    }
-
     const slotEntry = worker.availableSlots.find((slot) => slot.date === date);
-    const availableSlots = slotEntry?.timeSlots ?? [];
+    const allSlots = slotEntry?.timeSlots ?? [];
 
     const booked = await Booking.find({
       workerId: id,
       date,
-      status: { $in: ["pending", "confirmed"] },
+      status: { $in: ["pending", "confirmed", "in-progress"] },
     })
       .select("time -_id")
       .lean();
 
     const bookedSlots = booked.map((item) => item.time);
-    const openSlots = availableSlots.filter((slot) => !bookedSlots.includes(slot));
+    const availableSlots = allSlots.filter((slot) => !bookedSlots.includes(slot));
 
     return res.status(200).json({
       success: true,
-      data: {
-        date,
-        availableSlots,
-        bookedSlots,
-        openSlots,
-      },
+      availableSlots,
+      bookedSlots,
+      allSlots,
     });
   } catch (err) {
     return res.status(500).json({

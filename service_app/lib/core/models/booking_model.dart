@@ -1,4 +1,4 @@
-enum BookingStatus { pending, confirmed, completed, cancelled }
+enum BookingStatus { pending, confirmed, inProgress, completed, cancelled }
 
 class BookingModel {
   final String id;
@@ -9,6 +9,7 @@ class BookingModel {
   final String timeSlot;
   final String address;
   final BookingStatus status;
+  final bool isRated;
   final DateTime createdAt;
   final DateTime? completedAt;
   final double? rating;
@@ -23,6 +24,7 @@ class BookingModel {
     required this.timeSlot,
     required this.address,
     required this.status,
+    required this.isRated,
     required this.createdAt,
     this.completedAt,
     this.rating,
@@ -41,6 +43,7 @@ class BookingModel {
       'timeSlot': timeSlot,
       'address': address,
       'status': statusString.toLowerCase(),
+      'isRated': isRated,
       'createdAt': createdAt.toIso8601String(),
       'completedAt': completedAt?.toIso8601String(),
       'rating': rating,
@@ -63,6 +66,7 @@ class BookingModel {
       timeSlot: (json['timeSlot'] ?? json['time'] ?? '').toString(),
       address: (json['address'] ?? '').toString(),
       status: _parseStatus(json['status'] as String),
+      isRated: (json['isRated'] as bool?) ?? false,
       createdAt: DateTime.tryParse((json['createdAt'] ?? rawDate).toString()) ?? DateTime.now(),
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'] as String)
@@ -82,6 +86,7 @@ class BookingModel {
     String? timeSlot,
     String? address,
     BookingStatus? status,
+    bool? isRated,
     DateTime? createdAt,
     DateTime? completedAt,
     double? rating,
@@ -96,6 +101,7 @@ class BookingModel {
       timeSlot: timeSlot ?? this.timeSlot,
       address: address ?? this.address,
       status: status ?? this.status,
+      isRated: isRated ?? this.isRated,
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
       rating: rating ?? this.rating,
@@ -106,6 +112,7 @@ class BookingModel {
   // Helper methods
   bool get isPending => status == BookingStatus.pending;
   bool get isConfirmed => status == BookingStatus.confirmed;
+  bool get isInProgress => status == BookingStatus.inProgress;
   bool get isCompleted => status == BookingStatus.completed;
   bool get isCancelled => status == BookingStatus.cancelled;
 
@@ -118,6 +125,8 @@ class BookingModel {
         return 'Pending';
       case BookingStatus.confirmed:
         return 'Confirmed';
+      case BookingStatus.inProgress:
+        return 'In-Progress';
       case BookingStatus.completed:
         return 'Completed';
       case BookingStatus.cancelled:
@@ -134,6 +143,10 @@ class BookingModel {
       case 'confirmed':
       case 'BookingStatus.confirmed':
         return BookingStatus.confirmed;
+      case 'in-progress':
+      case 'in_progress':
+      case 'BookingStatus.inProgress':
+        return BookingStatus.inProgress;
       case 'BookingStatus.completed':
       case 'completed':
         return BookingStatus.completed;

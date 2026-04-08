@@ -22,6 +22,20 @@ const bookingSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+    },
+    review: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
+    isRated: {
+      type: Boolean,
+      default: false,
+    },
     address: {
       type: String,
       required: true,
@@ -29,7 +43,7 @@ const bookingSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "confirmed", "completed", "cancelled"],
+      enum: ["pending", "confirmed", "completed", "cancelled","in-progress"],
       default: "pending",
     },
   },
@@ -42,5 +56,6 @@ const bookingSchema = new mongoose.Schema(
 bookingSchema.index({ workerId: 1, date: 1, time: 1 }, { unique: true });
 bookingSchema.index({ userId: 1 });
 bookingSchema.index({ workerId: 1 });
+bookingSchema.index({ status: 1, isRated: 1 });
 
 export default mongoose.model("Booking", bookingSchema);

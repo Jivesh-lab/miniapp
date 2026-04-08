@@ -26,6 +26,7 @@ class _BookingScreenState extends State<BookingScreen> {
   bool _isSubmitting = false;
   bool _isLoadingSlots = true;
   String? _slotError;
+  List<String> _allSlots = [];
   List<String> _availableSlots = [];
   List<String> _bookedSlots = [];
 
@@ -326,7 +327,7 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        if (_availableSlots.isEmpty)
+        if (_allSlots.isEmpty)
           Text(
             'No slots available for selected date',
             style: GoogleFonts.inter(color: Colors.grey.shade600),
@@ -335,7 +336,7 @@ class _BookingScreenState extends State<BookingScreen> {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: _availableSlots.length,
+            itemCount: _allSlots.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               crossAxisSpacing: 8,
@@ -343,7 +344,7 @@ class _BookingScreenState extends State<BookingScreen> {
               childAspectRatio: 2.5,
             ),
             itemBuilder: (context, index) {
-              final slot = _availableSlots[index];
+              final slot = _allSlots[index];
               final isBooked = _bookedSlots.contains(slot);
               final isSelected = _selectedTimeSlot == slot;
 
@@ -539,11 +540,15 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year, now.month, now.day);
+    final lastDate = DateTime(now.year, now.month + 2, now.day);
+
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 60)),
+      firstDate: firstDate,
+      lastDate: lastDate,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -583,8 +588,16 @@ class _BookingScreenState extends State<BookingScreen> {
       if (!mounted) return;
 
       setState(() {
+        _allSlots = List<String>.from(
+          (slots['allSlots'] ?? slots['availableSlots'] ?? <dynamic>[]) as List<dynamic>,
+        );
         _availableSlots = List<String>.from((slots['availableSlots'] ?? <dynamic>[]) as List<dynamic>);
         _bookedSlots = List<String>.from((slots['bookedSlots'] ?? <dynamic>[]) as List<dynamic>);
+
+        // Ensure stale selections cannot be submitted.
+        if (_selectedTimeSlot != null && _bookedSlots.contains(_selectedTimeSlot)) {
+          _selectedTimeSlot = null;
+        }
         _isLoadingSlots = false;
       });
     } catch (e) {
@@ -613,6 +626,8 @@ class _BookingScreenState extends State<BookingScreen> {
       });
 
       if (!mounted) return;
+
+      await _loadSlotsForDate();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
