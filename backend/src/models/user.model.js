@@ -25,6 +25,17 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      unique: true,
+    },
+    password: {
+      type: String,
+      trim: true,
+      select: false,
+    },
+    role: {
+      type: String,
+      enum: ["user"],
+      default: "user",
     },
     favoriteWorkers: {
       type: [

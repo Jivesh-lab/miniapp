@@ -1,6 +1,14 @@
 import Booking from "../models/booking.model.js";
 import Worker from "../models/worker.model.js";
 import mongoose from "mongoose";
+import {
+  handleWorkerException,
+  sendWorkerError,
+  sendWorkerNotFound,
+  sendWorkerValidationError,
+} from "../utils/worker-error.util.js";
+
+const DEFAULT_ALL_SLOTS = ["10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
 
 const allowedTransitions = {
   pending: ["confirmed", "cancelled"],
@@ -11,34 +19,41 @@ const allowedTransitions = {
 };
 
 const invalidSlotResponse = (res) => {
-  return res.status(400).json({
-    success: false,
-    message: "Invalid slot",
-  });
+  return sendWorkerValidationError(res, "Selected slot is not available");
 };
 
 export const createBooking = async (req, res) => {
   try {
-    const { userId, workerId, date, time, address } = req.body;
+    const userId = String(req.user?.id ?? "").trim();
+    const { workerId, date, time, address } = req.body;
 
-    if (!userId || !workerId || !date || !time || !address) {
-      return res.status(400).json({
-        success: false,
-        message: "userId, workerId, date, time, and address are required",
-      });
+    if (!userId) {
+      return sendWorkerError(res, 401, "Unauthorized");
     }
 
-    const worker = await Worker.findById(workerId).select("availableSlots").lean();
+    if (!workerId || !date || !time || !address) {
+      return sendWorkerValidationError(
+        res,
+        "workerId, date, time, and address are required"
+      );
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
+      return sendWorkerValidationError(res, "date must be in YYYY-MM-DD format");
+    }
+
+    const selectedDate = new Date(String(date));
+    if (Number.isNaN(selectedDate.getTime())) {
+      return sendWorkerValidationError(res, "Invalid date");
+    }
+
+    const worker = await Worker.findById(workerId).select("_id").lean();
 
     if (!worker) {
-      return res.status(404).json({
-        success: false,
-        message: "Worker not found",
-      });
+      return sendWorkerNotFound(res, "Worker not found");
     }
 
-    const slotEntry = worker.availableSlots.find((slot) => slot.date === date);
-    const hasSlot = slotEntry?.timeSlots.includes(time);
+    const hasSlot = DEFAULT_ALL_SLOTS.includes(String(time));
 
     if (!hasSlot) {
       return invalidSlotResponse(res);
@@ -59,95 +74,84 @@ export const createBooking = async (req, res) => {
       data: booking,
     });
   } catch (error) {
-    if (error?.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        message: "Slot already booked",
-      });
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to create booking",
-      error: error.message,
-    });
+    return handleWorkerException(res, error, "Failed to create booking");
   }
 };
 
 export const getBookings = async (req, res) => {
+  return getUserBookings(req, res);
+};
+
+export const getUserBookings = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 50);
-    const skip = (page - 1) * limit;
+    const userId = String(req.user?.id ?? "").trim();
 
     if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: "userId is required",
-      });
+      return sendWorkerError(res, 401, "Unauthorized");
     }
 
-    const bookingQuery = { userId };
-
-    const [bookings, total] = await Promise.all([
-      Booking.find(bookingQuery)
-        .populate("workerId", "name rating")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Booking.countDocuments(bookingQuery),
-    ]);
+    const bookings = await Booking.find({ userId })
+      .populate("workerId", "name rating")
+      .sort({ createdAt: -1 })
+      .lean();
 
     return res.status(200).json({
       success: true,
       count: bookings.length,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
       data: bookings,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch bookings",
-      error: error.message,
-    });
+    return handleWorkerException(res, error, "Failed to fetch user bookings");
   }
 };
 
 export const updateBookingStatus = async (req, res) => {
   try {
+    const workerFromToken = req.worker?.workerId;
     const { id } = req.params;
     const { status } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return sendWorkerValidationError(res, "Invalid booking id");
+    }
+
+    if (!workerFromToken) {
+      return sendWorkerError(res, 401, "Unauthorized");
+    }
+
     if (
       !status ||
-      !["pending", "confirmed", "in-progress", "completed", "cancelled"].includes(status)
+      !["confirmed", "rejected", "in-progress", "completed"].includes(status)
     ) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid status",
-      });
+      return sendWorkerValidationError(res, "Invalid status");
     }
 
     const booking = await Booking.findById(id);
 
     if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: "Booking not found",
-      });
+      return sendWorkerError(res, 404, "Booking not found");
     }
 
-    const nextAllowed = allowedTransitions[booking.status] || [];
+    if (booking.workerId.toString() !== String(workerFromToken)) {
+      return sendWorkerError(res, 401, "Unauthorized access to booking");
+    }
+
+    const workerAllowedTransitions = {
+      pending: ["confirmed", "rejected"],
+      confirmed: ["in-progress", "rejected"],
+      rejected: [],
+      "in-progress": ["completed"],
+      completed: [],
+      cancelled: [],
+    };
+
+    const nextAllowed = workerAllowedTransitions[booking.status] || [];
 
     if (!nextAllowed.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: `Invalid status transition from ${booking.status} to ${status}`,
-      });
+      return sendWorkerValidationError(
+        res,
+        `Invalid status transition from ${booking.status} to ${status}`
+      );
     }
 
     booking.status = status;
@@ -163,32 +167,42 @@ export const updateBookingStatus = async (req, res) => {
       data: updated,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to update booking status",
-      error: error.message,
-    });
+    return handleWorkerException(res, error, "Failed to update booking status");
   }
 };
 
 export const deleteBooking = async (req, res) => {
+  return res.status(405).json({
+    success: false,
+    message: "Use PATCH /api/bookings/cancel/:id to cancel booking",
+  });
+};
+
+export const cancelBooking = async (req, res) => {
   try {
-    const { id } = req.params;
+    const bookingId = req.params.id;
+    const userId = String(req.user?.id ?? "").trim();
 
-    const booking = await Booking.findById(id);
-
-    if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: "Booking not found",
-      });
+    if (!mongoose.Types.ObjectId.isValid(bookingId)) {
+      return sendWorkerValidationError(res, "Invalid booking id");
     }
 
-    if (booking.status !== "pending") {
-      return res.status(400).json({
-        success: false,
-        message: "Only pending bookings can be cancelled",
-      });
+    if (!userId) {
+      return sendWorkerError(res, 401, "Unauthorized");
+    }
+
+    const booking = await Booking.findById(bookingId);
+
+    if (!booking) {
+      return sendWorkerError(res, 404, "Booking not found");
+    }
+
+    if (String(booking.userId) !== userId) {
+      return sendWorkerError(res, 401, "Unauthorized: You can only cancel your own booking");
+    }
+
+    if (booking.status === "completed" || booking.status === "cancelled") {
+      return sendWorkerValidationError(res, "Cannot cancel this booking");
     }
 
     booking.status = "cancelled";
@@ -199,99 +213,71 @@ export const deleteBooking = async (req, res) => {
       message: "Booking cancelled successfully",
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to cancel booking",
-      error: error.message,
-    });
+    return handleWorkerException(res, error, "Failed to cancel booking");
   }
 };
 
 export const rateBooking = async (req, res) => {
   try {
     const { id } = req.params;
-    const { rating, comment, skip } = req.body ?? {};
+    const { rating, comment } = req.body ?? {};
+    const userId = String(req.user?.id ?? "").trim();
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid booking id",
-      });
+      return sendWorkerValidationError(res, "Invalid booking id");
+    }
+
+    if (!userId) {
+      return sendWorkerError(res, 401, "Unauthorized");
+    }
+
+    const parsedRating = Number(rating);
+    if (!Number.isInteger(parsedRating) || parsedRating < 1 || parsedRating > 5) {
+      return sendWorkerValidationError(res, "rating must be an integer between 1 and 5");
     }
 
     if (comment !== undefined && typeof comment !== "string") {
-      return res.status(400).json({
-        success: false,
-        message: "comment must be a string",
-      });
+      return sendWorkerValidationError(res, "comment must be a string");
     }
 
     const normalizedComment = typeof comment === "string" ? comment.trim() : "";
-    const isSkip = skip === true;
 
-    let normalizedRating;
-    if (!isSkip) {
-      const parsedRating = Number(rating);
-      if (!Number.isInteger(parsedRating) || parsedRating < 1 || parsedRating > 5) {
-        return res.status(400).json({
-          success: false,
-          message: "rating must be an integer between 1 and 5",
-        });
-      }
-      normalizedRating = parsedRating;
-    }
-
-    const booking = await Booking.findById(id)
-      .select("_id userId workerId status isRated")
-      .lean();
+    const booking = await Booking.findById(id).select("_id userId workerId status isRated").lean();
 
     if (!booking) {
-      return res.status(404).json({
-        success: false,
-        message: "Booking not found",
-      });
+      return sendWorkerError(res, 404, "Booking not found");
+    }
+
+    if (String(booking.userId) !== userId) {
+      return sendWorkerError(res, 401, "Unauthorized");
     }
 
     if (booking.status !== "completed") {
-      return res.status(400).json({
-        success: false,
-        message: "Booking not completed",
-      });
+      return sendWorkerValidationError(res, "Booking not completed");
     }
 
     if (booking.isRated) {
-      return res.status(400).json({
-        success: false,
-        message: "Already rated",
-      });
-    }
-
-    const bookingUpdate = { isRated: true };
-    if (!isSkip) {
-      bookingUpdate.rating = normalizedRating;
-      bookingUpdate.review = normalizedComment;
+      return sendWorkerValidationError(res, "Already rated");
     }
 
     const updatedBooking = await Booking.findByIdAndUpdate(
       id,
       {
-        $set: bookingUpdate,
+        $set: {
+          isRated: true,
+          rating: parsedRating,
+          comment: normalizedComment,
+          // Keep legacy field in sync for backward compatibility.
+          review: normalizedComment,
+        },
       },
       { new: true, runValidators: true }
     ).lean();
 
-    if (isSkip) {
-      return res.status(200).json({
-        success: true,
-        message: "Rating skipped successfully",
-        data: updatedBooking,
-      });
-    }
-
     const reviewEntry = {
       userId: booking.userId,
       comment: normalizedComment,
-      rating: normalizedRating,
+      rating: parsedRating,
       createdAt: new Date(),
     };
 
@@ -304,38 +290,22 @@ export const rateBooking = async (req, res) => {
     const worker = await Worker.findById(booking.workerId);
 
     if (!worker) {
-      return res.status(404).json({
-        success: false,
-        message: "Worker not found",
-      });
+      return sendWorkerNotFound(res, "Worker not found");
     }
 
-    const totalRating = worker.reviews.reduce((sum, review) => sum + review.rating, 0);
-    const reviewCount = worker.reviews.length;
-
-    worker.rating = reviewCount ? totalRating / reviewCount : 0;
-    worker.ratingCount = reviewCount;
-    worker.ratingSum = totalRating;
+    worker.ratingSum = Number(worker.ratingSum || 0) + parsedRating;
+    worker.ratingCount = Number(worker.ratingCount || 0) + 1;
+    const averageRating = worker.ratingCount > 0 ? worker.ratingSum / worker.ratingCount : 0;
+    worker.rating = Number(averageRating.toFixed(1));
 
     await worker.save();
 
     return res.status(200).json({
       success: true,
-      message: "Rating submitted successfully",
-      data: {
-        booking: updatedBooking,
-        worker: {
-          _id: worker._id,
-          rating: worker.rating,
-          ratingCount: worker.ratingCount,
-        },
-      },
+      message: "Rating and comment submitted",
+      data: updatedBooking,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to submit rating",
-      error: error.message,
-    });
+    return handleWorkerException(res, error, "Server error");
   }
 };

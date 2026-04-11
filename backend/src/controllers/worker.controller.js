@@ -1,6 +1,13 @@
 import Worker from "../models/worker.model.js";
 import Booking from "../models/booking.model.js";
 import mongoose from "mongoose";
+import {
+  handleWorkerException,
+  sendWorkerNotFound,
+  sendWorkerValidationError,
+} from "../utils/worker-error.util.js";
+
+const DEFAULT_ALL_SLOTS = ["10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
 
 const parseOptionalNumber = (value) => {
   if (value === undefined || value === null || value === "") return { value: undefined };
@@ -126,10 +133,7 @@ export const getAllWorkers = async (req, res) => {
     const limitParsed = parseOptionalPositiveInt(req.query.limit, 10, 50);
 
     if (pageParsed.error || limitParsed.error) {
-      return res.status(400).json({
-        success: false,
-        message: pageParsed.error || limitParsed.error,
-      });
+      return sendWorkerValidationError(res, pageParsed.error || limitParsed.error);
     }
 
     const page = pageParsed.value;
@@ -146,10 +150,7 @@ export const getAllWorkers = async (req, res) => {
     );
 
     if (parseError) {
-      return res.status(400).json({
-        success: false,
-        message: parseError.error,
-      });
+      return sendWorkerValidationError(res, parseError.error);
     }
 
     const minRating = minRatingParsed.value;
@@ -157,26 +158,17 @@ export const getAllWorkers = async (req, res) => {
     const maxPrice = maxPriceParsed.value;
 
     if (minRating !== undefined && (minRating < 0 || minRating > 5)) {
-      return res.status(400).json({
-        success: false,
-        message: "rating must be between 0 and 5",
-      });
+      return sendWorkerValidationError(res, "rating must be between 0 and 5");
     }
 
     if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
-      return res.status(400).json({
-        success: false,
-        message: "minPrice cannot be greater than maxPrice",
-      });
+      return sendWorkerValidationError(res, "minPrice cannot be greater than maxPrice");
     }
 
     const workerQuery = {};
 
     if (q !== undefined && typeof q === "object") {
-      return res.status(400).json({
-        success: false,
-        message: "q must be a string",
-      });
+      return sendWorkerValidationError(res, "q must be a string");
     }
 
     if (typeof q === "string" && q.trim()) {
@@ -202,10 +194,7 @@ export const getAllWorkers = async (req, res) => {
 
     if (serviceId !== undefined) {
       if (typeof serviceId !== "string" || !mongoose.Types.ObjectId.isValid(serviceId)) {
-        return res.status(400).json({
-          success: false,
-          message: "serviceId must be a valid ObjectId",
-        });
+        return sendWorkerValidationError(res, "serviceId must be a valid ObjectId");
       }
 
       workerQuery.serviceId = serviceId;
@@ -227,11 +216,7 @@ export const getAllWorkers = async (req, res) => {
       data: workers,
     });
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch workers",
-      error: err.message,
-    });
+    return handleWorkerException(res, err, "Failed to fetch workers");
   }
 };
 
@@ -256,11 +241,7 @@ export const getWorkers = async (req, res) => {
       data: workers,
     });
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch workers",
-      error: err.message,
-    });
+    return handleWorkerException(res, err, "Failed to fetch workers");
   }
 };
 
@@ -284,30 +265,20 @@ export const searchWorkers = async (req, res) => {
       data: workers,
     });
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to search workers",
-      error: err.message,
-    });
+    return handleWorkerException(res, err, "Failed to search workers");
   }
 };
 
 export const getWorkerById = async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid worker id",
-      });
+      return sendWorkerValidationError(res, "Invalid worker id");
     }
 
     const worker = await Worker.findById(req.params.id).lean();
 
     if (!worker) {
-      return res.status(404).json({
-        success: false,
-        message: "Worker not found",
-      });
+      return sendWorkerNotFound(res, "Worker not found");
     }
 
     return res.status(200).json({
@@ -315,11 +286,7 @@ export const getWorkerById = async (req, res) => {
       data: worker,
     });
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch worker",
-      error: err.message,
-    });
+    return handleWorkerException(res, err, "Failed to fetch worker");
   }
 };
 
@@ -329,26 +296,17 @@ export const getWorkerAvailableSlots = async (req, res) => {
     const { date } = req.query;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid worker id",
-      });
+      return sendWorkerValidationError(res, "Invalid worker id");
     }
 
     if (!date || typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return res.status(400).json({
-        success: false,
-        message: "date query is required in YYYY-MM-DD format",
-      });
+      return sendWorkerValidationError(res, "date query is required in YYYY-MM-DD format");
     }
 
-    const selectedDate = new Date(`${date}T00:00:00.000Z`);
+    const selectedDate = new Date(date);
 
     if (Number.isNaN(selectedDate.getTime())) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid date",
-      });
+      return sendWorkerValidationError(res, "Invalid date");
     }
 
     const today = new Date();
@@ -357,28 +315,21 @@ export const getWorkerAvailableSlots = async (req, res) => {
     maxDate.setUTCMonth(maxDate.getUTCMonth() + 2);
 
     if (selectedDate < minDate || selectedDate > maxDate) {
-      return res.status(400).json({
-        success: false,
-        message: "Date must be within the current 2 months window",
-      });
+      return sendWorkerValidationError(res, "Date must be within the current 2 months window");
     }
 
-    const worker = await Worker.findById(id).select("availableSlots").lean();
+    const worker = await Worker.findById(id).select("_id").lean();
 
     if (!worker) {
-      return res.status(404).json({
-        success: false,
-        message: "Worker not found",
-      });
+      return sendWorkerNotFound(res, "Worker not found");
     }
 
-    const slotEntry = worker.availableSlots.find((slot) => slot.date === date);
-    const allSlots = slotEntry?.timeSlots ?? [];
+    const allSlots = [...DEFAULT_ALL_SLOTS];
 
     const booked = await Booking.find({
       workerId: id,
       date,
-      status: { $in: ["pending", "confirmed", "in-progress"] },
+      status: { $in: ["pending", "confirmed"] },
     })
       .select("time -_id")
       .lean();
@@ -393,10 +344,6 @@ export const getWorkerAvailableSlots = async (req, res) => {
       allSlots,
     });
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch worker slots",
-      error: err.message,
-    });
+    return handleWorkerException(res, err, "Failed to fetch worker slots");
   }
 };

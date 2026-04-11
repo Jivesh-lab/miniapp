@@ -3,9 +3,9 @@ import mongoose from "mongoose";
 const bookingSchema = new mongoose.Schema(
   {
     userId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
-      trim: true,
     },
     workerId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -32,6 +32,11 @@ const bookingSchema = new mongoose.Schema(
       trim: true,
       maxlength: 500,
     },
+    comment: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
     isRated: {
       type: Boolean,
       default: false,
@@ -43,7 +48,7 @@ const bookingSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "confirmed", "completed", "cancelled","in-progress"],
+      enum: ["pending", "confirmed", "rejected", "completed", "cancelled", "in-progress"],
       default: "pending",
     },
   },

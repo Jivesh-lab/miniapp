@@ -12,8 +12,42 @@ const findUserByIdentifier = async (identifier) => {
   return null;
 };
 
+const ensureAuthenticatedUser = async (req, res, identifier) => {
+  const authUserId = String(req.user?.id ?? "").trim();
+
+  if (!authUserId) {
+    return { error: res.status(401).json({ success: false, message: "Unauthorized" }) };
+  }
+
+  const authUser = await findUserByIdentifier(authUserId);
+
+  if (!authUser) {
+    return { error: res.status(401).json({ success: false, message: "Unauthorized" }) };
+  }
+
+  const targetUser = await findUserByIdentifier(String(identifier ?? "").trim());
+
+  if (!targetUser) {
+    return { error: res.status(404).json({ success: false, message: "User not found" }) };
+  }
+
+  if (String(authUser._id) !== String(targetUser._id)) {
+    return { error: res.status(403).json({ success: false, message: "Forbidden" }) };
+  }
+
+  return { user: targetUser };
+};
+
 export const createUser = async (req, res) => {
   try {
+    const authUserId = String(req.user?.id ?? "").trim();
+    if (!authUserId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
     const { userId, name, email, phone } = req.body;
 
     if (!name || !email || !phone) {
@@ -63,9 +97,51 @@ export const createUser = async (req, res) => {
   }
 };
 
+export const getUserProfile = async (req, res) => {
+  try {
+    const userId = String(req.user?.id ?? "").trim();
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const user = await findUserByIdentifier(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const profile = await User.findById(user._id)
+      .populate("favoriteWorkers", "name rating price location")
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      data: profile,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch user profile",
+      error: error.message,
+    });
+  }
+};
+
 export const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
+
+    const access = await ensureAuthenticatedUser(req, res, id);
+    if (access.error) {
+      return access.error;
+    }
 
     if (!id) {
       return res.status(400).json({
@@ -74,7 +150,7 @@ export const getUserById = async (req, res) => {
       });
     }
 
-    const userDoc = await findUserByIdentifier(id);
+    const userDoc = access.user;
     const user = userDoc ? userDoc.toObject() : null;
 
     if (!user) {
@@ -102,7 +178,12 @@ export const updateUser = async (req, res) => {
     const { id } = req.params;
     const { name, phone } = req.body;
 
-    const existing = await findUserByIdentifier(id);
+    const access = await ensureAuthenticatedUser(req, res, id);
+    if (access.error) {
+      return access.error;
+    }
+
+    const existing = access.user;
 
     if (!existing) {
       return res.status(404).json({
@@ -135,16 +216,12 @@ export const getFavoriteWorkers = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const userDoc = await findUserByIdentifier(userId);
-
-    if (!userDoc) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+    const access = await ensureAuthenticatedUser(req, res, userId);
+    if (access.error) {
+      return access.error;
     }
 
-    const user = await User.findById(userDoc._id)
+    const user = await User.findById(access.user._id)
       .populate("favoriteWorkers", "name rating price location")
       .lean();
 
@@ -181,14 +258,12 @@ export const addFavoriteWorker = async (req, res) => {
       });
     }
 
-    const user = await findUserByIdentifier(userId);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+    const access = await ensureAuthenticatedUser(req, res, userId);
+    if (access.error) {
+      return access.error;
     }
+
+    const user = access.user;
 
     const exists = user.favoriteWorkers.some((id) => id.toString() === workerId);
 

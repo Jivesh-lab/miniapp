@@ -7,10 +7,21 @@ const workerSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+    },
+    password: {
+      type: String,
+      required: true,
+      select: false,
+    },
     serviceId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Service",
-      required: true,
+      default: null,
     },
     rating: {
       type: Number,
@@ -30,13 +41,13 @@ const workerSchema = new mongoose.Schema(
     },
     price: {
       type: Number,
-      required: true,
       min: 0,
+      default: 0,
     },
     location: {
       type: String,
-      required: true,
       trim: true,
+      default: "",
     },
     skills: {
       type: [String],
@@ -85,6 +96,11 @@ const workerSchema = new mongoose.Schema(
         },
       ],
       default: [],
+    },
+    role: {
+      type: String,
+      default: "worker",
+      enum: ["worker"],
     },
   },
   {

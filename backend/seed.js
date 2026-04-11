@@ -36,7 +36,7 @@ const seedDatabase = async () => {
     await User.deleteMany({});
     console.log("Cleared existing data");
 
-    await User.create({
+    const seededUser = await User.create({
       userId: "12345",
       name: "Demo User",
       email: "demo.user@example.com",
@@ -165,7 +165,7 @@ const seedDatabase = async () => {
 
     await Booking.insertMany([
       {
-        userId: "12345",
+        userId: seededUser._id,
         workerId: workers[0]._id,
         date: "2026-04-10",
         time: "10:00 AM",
@@ -173,7 +173,7 @@ const seedDatabase = async () => {
         status: "pending",
       },
       {
-        userId: "12345",
+        userId: seededUser._id,
         workerId: workers[2]._id,
         date: "2026-04-09",
         time: "2:00 PM",
@@ -181,7 +181,7 @@ const seedDatabase = async () => {
         status: "completed",
       },
       {
-        userId: "12345",
+        userId: seededUser._id,
         workerId: workers[4]._id,
         date: "2026-04-11",
         time: "12:00 PM",
