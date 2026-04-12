@@ -1,4 +1,7 @@
 import 'package:http/http.dart' as http;
+import 'package:http/http.dart' show TimeoutException;
+import 'dart:async';
+import 'dart:io';
 
 import '../models/worker_model.dart';
 import 'api_service.dart';
@@ -107,62 +110,96 @@ class WorkerService {
     int page = 1,
     int limit = 20,
   }) async {
-    final query = buildWorkerQueryParams(
-      sort: sort,
-      q: q,
-      rating: rating,
-      minPrice: minPrice,
-      maxPrice: maxPrice,
-      page: page,
-      limit: limit,
-    );
+    try {
+      final query = buildWorkerQueryParams(
+        sort: sort,
+        q: q,
+        rating: rating,
+        minPrice: minPrice,
+        maxPrice: maxPrice,
+        page: page,
+        limit: limit,
+      );
 
-    final path = serviceId.trim().isEmpty ? '/workers/search' : '/workers/$serviceId';
+      final path = serviceId.trim().isEmpty ? '/workers/search' : '/workers/$serviceId';
 
-    // Example: final response = await http.get(ApiService.uri('/workers', buildWorkerQueryParams(...)));
-    final response = await http.get(
-      ApiService.uri(path, query.isEmpty ? null : query),
-      headers: ApiService.headers,
-    );
+      final response = await http
+          .get(
+            ApiService.uri(path, query.isEmpty ? null : query),
+            headers: await ApiService.authHeaders(),
+          )
+          .timeout(ApiService.requestTimeout);
 
-    final body = ApiService.parseResponse(response);
-    final data = (body['data'] as List<dynamic>? ?? <dynamic>[])
-        .cast<Map<String, dynamic>>();
+      final body = await ApiService.parseAuthenticatedResponse(
+        response,
+        clearSession: ApiService.clearUserSession,
+        loginRoute: '/login',
+      );
+      final data = (body['data'] as List<dynamic>? ?? <dynamic>[])
+          .cast<Map<String, dynamic>>();
 
-    return data.map(WorkerModel.fromJson).toList();
+      return data.map(WorkerModel.fromJson).toList();
+    } on TimeoutException {
+      throw Exception('Network timeout, please try again');
+    } on SocketException {
+      throw Exception('Network error, please check your connection');
+    }
   }
 
   Future<WorkerModel> getWorkerById(String id) async {
-    final response = await http.get(
-      ApiService.uri('/workers/detail/$id'),
-      headers: ApiService.headers,
-    );
+    try {
+      final response = await http
+          .get(
+            ApiService.uri('/workers/detail/$id'),
+            headers: await ApiService.authHeaders(),
+          )
+          .timeout(ApiService.requestTimeout);
 
-    final body = ApiService.parseResponse(response);
-    final data = body['data'] as Map<String, dynamic>;
-    return WorkerModel.fromJson(data);
+      final body = await ApiService.parseAuthenticatedResponse(
+        response,
+        clearSession: ApiService.clearUserSession,
+        loginRoute: '/login',
+      );
+      final data = body['data'] as Map<String, dynamic>;
+      return WorkerModel.fromJson(data);
+    } on TimeoutException {
+      throw Exception('Network timeout, please try again');
+    } on SocketException {
+      throw Exception('Network error, please check your connection');
+    }
   }
 
   Future<Map<String, dynamic>> getWorkerSlots({
     required String workerId,
     required String date,
   }) async {
-    final response = await http.get(
-      ApiService.uri('/workers/$workerId/slots', {'date': date}),
-      headers: ApiService.headers,
-    );
+    try {
+      final response = await http
+          .get(
+            ApiService.uri('/workers/$workerId/slots', {'date': date}),
+            headers: await ApiService.authHeaders(),
+          )
+          .timeout(ApiService.requestTimeout);
 
-    final body = ApiService.parseResponse(response);
+      final body = await ApiService.parseAuthenticatedResponse(
+        response,
+        clearSession: ApiService.clearUserSession,
+        loginRoute: '/login',
+      );
 
-    // Supports current endpoint shape and older nested `data` shape.
-    if (body['data'] is Map<String, dynamic>) {
-      return (body['data'] as Map<String, dynamic>?) ?? <String, dynamic>{};
+      if (body['data'] is Map<String, dynamic>) {
+        return (body['data'] as Map<String, dynamic>?) ?? <String, dynamic>{};
+      }
+
+      return {
+        'availableSlots': body['availableSlots'] ?? <dynamic>[],
+        'bookedSlots': body['bookedSlots'] ?? <dynamic>[],
+        'allSlots': body['allSlots'] ?? body['availableSlots'] ?? <dynamic>[],
+      };
+    } on TimeoutException {
+      throw Exception('Network timeout, please try again');
+    } on SocketException {
+      throw Exception('Network error, please check your connection');
     }
-
-    return {
-      'availableSlots': body['availableSlots'] ?? <dynamic>[],
-      'bookedSlots': body['bookedSlots'] ?? <dynamic>[],
-      'allSlots': body['allSlots'] ?? body['availableSlots'] ?? <dynamic>[],
-    };
   }
 }

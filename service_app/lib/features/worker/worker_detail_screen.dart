@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/models/worker_model.dart';
+import '../../core/utils/error_message_helper.dart';
 import '../../core/services/user_service.dart';
 import '../../core/services/worker_service.dart';
 
@@ -47,8 +48,9 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      ErrorMessageHelper.showSnackBar(context, ErrorMessageHelper.workerList(e));
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = ErrorMessageHelper.workerList(e);
         _isLoading = false;
       });
     }

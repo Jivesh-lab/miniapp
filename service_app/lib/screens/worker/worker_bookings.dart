@@ -1,0 +1,321 @@
+import 'package:flutter/material.dart';
+
+import '../../core/services/api_exception.dart';
+import '../../models/booking_model.dart';
+import '../../core/utils/error_message_helper.dart';
+import '../../services/api_service.dart';
+import 'booking_detail.dart';
+
+class WorkerBookingsScreen extends StatefulWidget {
+  const WorkerBookingsScreen({super.key});
+
+  @override
+  State<WorkerBookingsScreen> createState() => _WorkerBookingsScreenState();
+}
+
+class _WorkerBookingsScreenState extends State<WorkerBookingsScreen> {
+  final _api = WorkerApiService();
+
+  WorkerSession? _session;
+  bool _didInitLoad = false;
+  String _selectedFilter = 'all';
+  bool _isLoading = true;
+  bool _isError = false;
+  String? _errorMessage;
+  List<WorkerBooking> _bookings = <WorkerBooking>[];
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_didInitLoad) {
+      return;
+    }
+    _didInitLoad = true;
+
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is WorkerSession) {
+      _session = args;
+    }
+
+    _loadBookings();
+  }
+
+  Future<void> _loadBookings({bool forceRefresh = false}) async {
+    setState(() {
+      _isLoading = true;
+      _isError = false;
+      _errorMessage = null;
+    });
+
+    try {
+      _session ??= await _api.getSavedSession();
+      final session = _session;
+
+      if (session == null) {
+        throw Exception('Please login again');
+      }
+
+      final bookings = await _api.getWorkerBookings(
+        session: session,
+        forceRefresh: forceRefresh,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _bookings = bookings;
+        _isLoading = false;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      if (error.statusCode == 401) {
+        return;
+      }
+
+      if (error.statusCode == 404) {
+        setState(() {
+          _bookings = <WorkerBooking>[];
+          _isLoading = false;
+          _isError = false;
+          _errorMessage = null;
+        });
+        return;
+      }
+
+      setState(() {
+        _bookings = <WorkerBooking>[];
+        _isLoading = false;
+        _isError = true;
+        _errorMessage = ErrorMessageHelper.generic(error);
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _bookings = <WorkerBooking>[];
+        _isLoading = false;
+        _isError = true;
+        _errorMessage = ErrorMessageHelper.generic(error);
+      });
+    }
+  }
+
+  List<WorkerBooking> _applyFilter(List<WorkerBooking> bookings) {
+    if (_selectedFilter == 'all') {
+      return bookings;
+    }
+
+    return bookings.where((booking) => booking.statusValue == _selectedFilter).toList();
+  }
+
+  Future<void> _refresh() async {
+    await _loadBookings(forceRefresh: true);
+  }
+
+  void _goBack() {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+      return;
+    }
+
+    Navigator.pushReplacementNamed(context, '/worker/dashboard');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: _goBack,
+          icon: const Icon(Icons.arrow_back),
+        ),
+        title: const Text('Assigned Bookings'),
+      ),
+      body: Column(
+        children: [
+          _FilterBar(
+            selectedFilter: _selectedFilter,
+            onChanged: (filter) {
+              setState(() {
+                _selectedFilter = filter;
+              });
+            },
+          ),
+          Expanded(
+            child: _buildBody(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_isError) {
+      return _ErrorView(
+        message: _errorMessage ?? ErrorMessageHelper.genericApiFailure,
+        onRetry: _refresh,
+      );
+    }
+
+    final bookings = _applyFilter(_bookings);
+    if (bookings.isEmpty) {
+      return const Center(child: Text('No bookings found'));
+    }
+
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: bookings.length,
+        itemBuilder: (context, index) {
+          final booking = bookings[index];
+          return Card(
+            child: ListTile(
+              onTap: () async {
+                final session = _session;
+                if (session == null) {
+                  ErrorMessageHelper.showSnackBar(context, 'Please login again');
+                  return;
+                }
+
+                final updated = await Navigator.pushNamed(
+                  context,
+                  '/worker/booking-detail',
+                  arguments: WorkerBookingDetailArgs(
+                    booking: booking,
+                    session: session,
+                  ),
+                );
+
+                if (updated == true) {
+                  await _refresh();
+                }
+              },
+              title: Text(
+                booking.customerName,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text('${booking.date} at ${booking.time}'),
+              ),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: booking.statusColor.withOpacity(0.14),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  booking.statusLabel,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: booking.statusColor,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _FilterBar extends StatelessWidget {
+  final String selectedFilter;
+  final ValueChanged<String> onChanged;
+
+  const _FilterBar({
+    required this.selectedFilter,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const filters = ['all', 'pending', 'confirmed', 'completed'];
+
+    return SizedBox(
+      height: 54,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        scrollDirection: Axis.horizontal,
+        itemCount: filters.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final filter = filters[index];
+          final active = selectedFilter == filter;
+
+          return ChoiceChip(
+            label: Text(_label(filter)),
+            selected: active,
+            onSelected: (_) => onChanged(filter),
+          );
+        },
+      ),
+    );
+  }
+
+  String _label(String filter) {
+    if (filter == 'all') {
+      return 'All';
+    }
+    if (filter == 'pending') {
+      return 'Pending';
+    }
+    if (filter == 'confirmed') {
+      return 'Confirmed';
+    }
+    if (filter == 'completed') {
+      return 'Completed';
+    }
+    return filter;
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  final String message;
+  final Future<void> Function() onRetry;
+
+  const _ErrorView({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: onRetry,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

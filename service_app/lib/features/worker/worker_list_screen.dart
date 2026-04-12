@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/models/worker_model.dart';
+import '../../core/utils/error_message_helper.dart';
 import '../../core/services/worker_service.dart';
 import '../../core/widgets/search_bar_widget.dart';
 import '../../core/widgets/worker_card.dart';
@@ -67,8 +68,9 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      ErrorMessageHelper.showSnackBar(context, ErrorMessageHelper.workerList(e));
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = ErrorMessageHelper.workerList(e);
         _isLoading = false;
       });
     }
@@ -166,7 +168,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
     }
 
     if (_workers.isEmpty) {
-      return const Center(child: Text('No workers found'));
+      return const Center(child: Text('No workers available'));
     }
 
     return ListView.builder(

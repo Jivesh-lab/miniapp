@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/api_exception.dart';
 import '../../core/services/service_service.dart';
 import '../../core/widgets/category_card.dart';
 import '../../core/widgets/search_bar_widget.dart';
@@ -41,6 +42,11 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+
+      if (e is ApiException && e.statusCode == 401) {
+        return;
+      }
+
       setState(() {
         _serviceError = e.toString().replaceFirst('Exception: ', '');
         _isLoadingServices = false;

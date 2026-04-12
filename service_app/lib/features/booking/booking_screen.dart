@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/models/worker_model.dart';
 import '../../core/services/booking_service.dart';
 import '../../core/services/worker_service.dart';
+import '../../core/utils/error_message_helper.dart';
 
 class BookingScreen extends StatefulWidget {
   final WorkerModel worker;
@@ -26,6 +27,7 @@ class _BookingScreenState extends State<BookingScreen> {
   bool _isSubmitting = false;
   bool _isLoadingSlots = true;
   String? _slotError;
+  bool _isAddressReady = false;
   List<String> _allSlots = [];
   List<String> _availableSlots = [];
   List<String> _bookedSlots = [];
@@ -35,13 +37,22 @@ class _BookingScreenState extends State<BookingScreen> {
     super.initState();
     _selectedDate = DateTime.now().add(const Duration(days: 1));
     _addressController = TextEditingController();
+    _addressController.addListener(_handleAddressChange);
     _loadSlotsForDate();
   }
 
   @override
   void dispose() {
+    _addressController.removeListener(_handleAddressChange);
     _addressController.dispose();
     super.dispose();
+  }
+
+  void _handleAddressChange() {
+    final hasAddress = _addressController.text.trim().isNotEmpty;
+    if (hasAddress != _isAddressReady && mounted) {
+      setState(() => _isAddressReady = hasAddress);
+    }
   }
 
   @override
@@ -458,7 +469,7 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   Widget _buildConfirmButton(bool isMobile, double padding) {
-    final isFormValid = _selectedTimeSlot != null && _addressController.text.isNotEmpty;
+    final isFormValid = _selectedTimeSlot != null && _isAddressReady;
 
     return Container(
       decoration: BoxDecoration(
@@ -602,10 +613,12 @@ class _BookingScreenState extends State<BookingScreen> {
       });
     } catch (e) {
       if (!mounted) return;
+      final message = ErrorMessageHelper.booking(e);
       setState(() {
-        _slotError = e.toString().replaceFirst('Exception: ', '');
+        _slotError = message;
         _isLoadingSlots = false;
       });
+      ErrorMessageHelper.showSnackBar(context, message);
     }
   }
 
@@ -644,10 +657,11 @@ class _BookingScreenState extends State<BookingScreen> {
       Navigator.pushNamed(context, '/my-bookings');
     } catch (e) {
       if (!mounted) return;
+      final errorMessage = ErrorMessageHelper.booking(e);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
+            errorMessage,
             style: GoogleFonts.inter(fontWeight: FontWeight.w500),
           ),
           backgroundColor: Colors.red,

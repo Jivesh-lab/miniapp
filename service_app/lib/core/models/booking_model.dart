@@ -14,6 +14,7 @@ class BookingModel {
   final DateTime? completedAt;
   final double? rating;
   final String? review;
+  final String? comment;
 
   BookingModel({
     required this.id,
@@ -29,6 +30,7 @@ class BookingModel {
     this.completedAt,
     this.rating,
     this.review,
+    this.comment,
   });
 
   // Convert to JSON
@@ -48,6 +50,7 @@ class BookingModel {
       'completedAt': completedAt?.toIso8601String(),
       'rating': rating,
       'review': review,
+      'comment': comment,
     };
   }
 
@@ -73,6 +76,7 @@ class BookingModel {
           : null,
       rating: (json['rating'] as num?)?.toDouble(),
       review: json['review'] as String?,
+      comment: (json['comment'] ?? json['review']) as String?,
     );
   }
 
@@ -91,6 +95,7 @@ class BookingModel {
     DateTime? completedAt,
     double? rating,
     String? review,
+    String? comment,
   }) {
     return BookingModel(
       id: id ?? this.id,
@@ -106,6 +111,7 @@ class BookingModel {
       completedAt: completedAt ?? this.completedAt,
       rating: rating ?? this.rating,
       review: review ?? this.review,
+      comment: comment ?? this.comment,
     );
   }
 

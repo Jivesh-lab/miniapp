@@ -1,27 +1,322 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'api_exception.dart';
+import '../navigation/app_navigator.dart';
 
 class ApiService {
   static const String baseUrl = 'http://localhost:5000/api';
+  static const Duration requestTimeout = Duration(seconds: 10);
+  static const String _userTokenKey = 'user_token';
+  static const String _userIdKey = 'user_id';
+  static const String _workerSessionKey = 'worker_session';
+
+  static String? _extractWorkerToken(String? rawSession) {
+    if (rawSession == null || rawSession.isEmpty) {
+      return null;
+    }
+
+    try {
+      final decoded = jsonDecode(rawSession);
+      if (decoded is Map<String, dynamic>) {
+        final token = (decoded['token'] ?? '').toString();
+        if (token.isNotEmpty) {
+          return token;
+        }
+      }
+    } catch (_) {
+      // Ignore invalid session payload and fall back to unauthenticated headers.
+    }
+
+    return null;
+  }
 
   static Map<String, String> get headers => {
         'Content-Type': 'application/json',
       };
+
+  static Future<Map<String, String>> authHeaders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userToken = prefs.getString(_userTokenKey);
+    final workerToken = _extractWorkerToken(prefs.getString(_workerSessionKey));
+    final token = (userToken != null && userToken.isNotEmpty) ? userToken : workerToken;
+
+    final map = <String, String>{
+      'Content-Type': 'application/json',
+    };
+
+    if (token != null && token.isNotEmpty) {
+      map['Authorization'] = 'Bearer $token';
+    }
+
+    return map;
+  }
+
+  static Future<void> saveUserSession({required String token, required String userId}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userTokenKey, token);
+    await prefs.setString(_userIdKey, userId);
+  }
+
+  static Future<void> saveWorkerSession({required String token, required String workerId}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _workerSessionKey,
+      jsonEncode({
+        'workerId': workerId,
+        'token': token,
+      }),
+    );
+  }
+
+  static Future<void> clearUserSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userTokenKey);
+    await prefs.remove(_userIdKey);
+  }
+
+  static Future<void> clearWorkerSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_workerSessionKey);
+  }
+
+  static Future<void> clearAllSessions() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userTokenKey);
+    await prefs.remove(_userIdKey);
+    await prefs.remove(_workerSessionKey);
+  }
+
+  static Future<String?> getSavedUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userIdKey);
+  }
 
   static Uri uri(String path, [Map<String, String>? query]) {
     return Uri.parse('$baseUrl$path').replace(queryParameters: query);
   }
 
   static Map<String, dynamic> parseResponse(http.Response response) {
-    final Map<String, dynamic> body = response.body.isEmpty
-        ? <String, dynamic>{}
-        : jsonDecode(response.body) as Map<String, dynamic>;
+    final Map<String, dynamic> body;
+
+    try {
+      body = response.body.isEmpty
+          ? <String, dynamic>{}
+          : jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw ApiException(
+        message: 'Unexpected response from server',
+        statusCode: response.statusCode,
+      );
+    }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return body;
     }
 
-    throw Exception(body['message']?.toString() ?? 'Request failed');
+    throw ApiException(
+      message: body['message']?.toString() ?? 'Request failed',
+      statusCode: response.statusCode,
+    );
+  }
+
+  static Future<Map<String, dynamic>> parseAuthenticatedResponse(
+    http.Response response, {
+    required Future<void> Function() clearSession,
+    required String loginRoute,
+  }) async {
+    final Map<String, dynamic> body;
+
+    try {
+      body = response.body.isEmpty
+          ? <String, dynamic>{}
+          : jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw const ApiException(
+        message: 'Unexpected response from server',
+        statusCode: 500,
+      );
+    }
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return body;
+    }
+
+    if (response.statusCode == 401) {
+      await clearSession();
+      final navigator = appNavigatorKey.currentState;
+      if (navigator != null) {
+        navigator.pushNamedAndRemoveUntil(loginRoute, (route) => false);
+      }
+      throw ApiException(
+        message: body['message']?.toString() ?? 'Token expired, login again',
+        statusCode: 401,
+      );
+    }
+
+    throw ApiException(
+      message: body['message']?.toString() ?? 'Request failed',
+      statusCode: response.statusCode,
+    );
+  }
+
+  static Future<Map<String, dynamic>> loginByRole({
+    required String role,
+    required String identifier,
+    required String password,
+  }) async {
+    final normalizedRole = role.toLowerCase();
+
+    if (normalizedRole != 'user' && normalizedRole != 'worker') {
+      throw const ApiException(message: 'Invalid role selected', statusCode: 400);
+    }
+
+    final response = await postJson('/auth/login', {
+      'identifier': identifier.trim(),
+      'password': password,
+    });
+
+    final parsed = parseResponse(response);
+    final data = (parsed['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
+    final responseRole = (parsed['role'] ?? data['role'] ?? normalizedRole).toString().toLowerCase();
+    final token = (parsed['token'] ?? data['token'] ?? '').toString();
+    final id = (parsed['id'] ?? data['id'] ?? data['_id'] ?? '').toString();
+
+    if (responseRole == 'worker') {
+      await clearUserSession();
+      if (token.isNotEmpty && id.isNotEmpty) {
+        await saveWorkerSession(token: token, workerId: id);
+      }
+    } else if (responseRole == 'user') {
+      await clearWorkerSession();
+      if (token.isNotEmpty && id.isNotEmpty) {
+        await saveUserSession(token: token, userId: id);
+      }
+    }
+
+    return parsed;
+  }
+
+  static Future<void> logoutUser() async {
+    try {
+      await postJson('/auth/logout', <String, dynamic>{}, useAuthHeaders: true);
+    } catch (_) {
+      // Best effort. Local session is always cleared below.
+    }
+
+    await clearAllSessions();
+  }
+
+  static Future<Map<String, dynamic>> registerUser({
+    required String name,
+    required String phone,
+    required String password,
+    required String email,
+  }) async {
+    final response = await postJson('/auth/register-user', {
+      'name': name.trim(),
+      'phone': phone.trim(),
+      'password': password,
+      'email': email.trim(),
+    });
+
+    return parseResponse(response);
+  }
+
+  static Future<void> registerWorker({
+    required String name,
+    required String phone,
+    required String password,
+  }) async {
+    final response = await postJson('/auth/register-worker', {
+      'name': name.trim(),
+      'phone': phone.trim(),
+      'password': password,
+    });
+
+    parseResponse(response);
+  }
+
+  static Future<http.Response> postJson(
+    String path,
+    Map<String, dynamic> payload, {
+    bool useAuthHeaders = false,
+  }) async {
+    try {
+      return await http
+          .post(
+            uri(path),
+            headers: useAuthHeaders ? await authHeaders() : headers,
+            body: jsonEncode(payload),
+          )
+          .timeout(requestTimeout);
+    } on TimeoutException {
+      throw const ApiException(message: 'Network timeout, please try again', statusCode: 408);
+    } on SocketException {
+      throw const ApiException(message: 'Network error, please check your connection', statusCode: 0);
+    }
+  }
+
+  static Future<http.Response> getJson(
+    String path, {
+    Map<String, String>? query,
+    bool useAuthHeaders = false,
+  }) async {
+    try {
+      return await http
+          .get(
+            uri(path, query),
+            headers: useAuthHeaders ? await authHeaders() : headers,
+          )
+          .timeout(requestTimeout);
+    } on TimeoutException {
+      throw const ApiException(message: 'Network timeout, please try again', statusCode: 408);
+    } on SocketException {
+      throw const ApiException(message: 'Network error, please check your connection', statusCode: 0);
+    }
+  }
+
+  static Future<http.Response> putJson(
+    String path,
+    Map<String, dynamic> payload, {
+    bool useAuthHeaders = false,
+  }) async {
+    try {
+      return await http
+          .put(
+            uri(path),
+            headers: useAuthHeaders ? await authHeaders() : headers,
+            body: jsonEncode(payload),
+          )
+          .timeout(requestTimeout);
+    } on TimeoutException {
+      throw const ApiException(message: 'Network timeout, please try again', statusCode: 408);
+    } on SocketException {
+      throw const ApiException(message: 'Network error, please check your connection', statusCode: 0);
+    }
+  }
+
+  static Future<http.Response> patchJson(
+    String path,
+    Map<String, dynamic> payload, {
+    bool useAuthHeaders = false,
+  }) async {
+    try {
+      return await http
+          .patch(
+            uri(path),
+            headers: useAuthHeaders ? await authHeaders() : headers,
+            body: jsonEncode(payload),
+          )
+          .timeout(requestTimeout);
+    } on TimeoutException {
+      throw const ApiException(message: 'Network timeout, please try again', statusCode: 408);
+    } on SocketException {
+      throw const ApiException(message: 'Network error, please check your connection', statusCode: 0);
+    }
   }
 }

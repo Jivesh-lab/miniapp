@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/api_exception.dart';
 import '../../core/models/booking_model.dart';
+import '../../core/services/api_service.dart';
 import '../../core/services/booking_service.dart';
 import '../../core/widgets/booking_card.dart';
 
@@ -20,8 +22,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   bool _isLoading = true;
   String? _errorMessage;
   bool _isRatingDialogVisible = false;
+  bool _isSubmittingRating = false;
   final Set<String> _promptedRatingBookingIds = <String>{};
-  static const String _userId = 'demo-user-1';
 
   List<BookingModel> ongoingBookings = [];
   List<BookingModel> completedBookings = [];
@@ -44,7 +46,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     });
 
     try {
-      final allBookings = await _bookingService.getBookings(_userId);
+      final userId = await ApiService.getSavedUserId();
+      final allBookings = await _bookingService.getBookings(userId ?? '');
 
       if (!mounted) return;
       setState(() {
@@ -69,6 +72,11 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       _promptRatingIfNeeded();
     } catch (e) {
       if (!mounted) return;
+
+      if (e is ApiException && e.statusCode == 401) {
+        return;
+      }
+
       setState(() {
         _errorMessage = e.toString().replaceFirst('Exception: ', '');
         _isLoading = false;
@@ -111,12 +119,28 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
         return;
       }
 
+      if (result.skip) {
+        _promptedRatingBookingIds.remove(targetBooking.id);
+        return;
+      }
+
       try {
+        if (mounted) {
+          setState(() => _isSubmittingRating = true);
+        }
+
         await _bookingService.rateBooking(
           bookingId: targetBooking.id,
-          rating: result.rating,
+          rating: result.rating!,
           comment: result.comment,
-          skip: result.skip,
+        );
+
+        if (!mounted) {
+          return;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Thanks for your feedback!')),
         );
 
         await _fetchBookings();
@@ -132,6 +156,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
             content: Text(e.toString().replaceFirst('Exception: ', '')),
           ),
         );
+      } finally {
+        if (mounted) {
+          setState(() => _isSubmittingRating = false);
+        }
       }
     });
   }
@@ -142,20 +170,48 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
     return showDialog<_RatingDialogResult>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: Text(
-                'Rate ${booking.workerName}',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Rate Your Service',
+                      style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(
+                      const _RatingDialogResult(skip: true),
+                    ),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
               ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      booking.workerName,
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      booking.serviceType,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     Text(
                       'How was your service experience?',
                       style: GoogleFonts.inter(
@@ -190,6 +246,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                     TextField(
                       controller: commentController,
                       maxLines: 3,
+                      maxLength: 150,
                       decoration: const InputDecoration(
                         hintText: 'Optional comment',
                         border: OutlineInputBorder(),
@@ -283,6 +340,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
   Widget _buildContent(bool isMobile) {
     if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_isSubmittingRating) {
       return const Center(child: CircularProgressIndicator());
     }
 

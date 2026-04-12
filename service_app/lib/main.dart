@@ -2,15 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'core/models/worker_model.dart';
+import 'core/navigation/app_navigator.dart';
 
 import 'features/home/home_screen.dart';
 import 'features/auth/loginscreen.dart';
+import 'features/auth/signup_screen.dart';
 import 'features/worker/worker_list_screen.dart';
 import 'features/worker/worker_detail_screen.dart';
 
 import 'features/booking/booking_screen.dart';
 import 'features/my_bookings/my_bookings_screen.dart';
 import 'features/profie_screen.dart/profile_screen.dart';
+import 'screens/worker/worker_login.dart';
+import 'screens/worker/worker_dashboard.dart';
+import 'screens/worker/worker_bookings.dart';
+import 'screens/worker/booking_detail.dart';
+import 'screens/worker/worker_profile_completion_screen.dart';
 
 void main() {
   runApp(const LocalServicesApp());
@@ -24,6 +31,7 @@ class LocalServicesApp extends StatelessWidget {
     return MaterialApp(
       title: 'Local Services',
       debugShowCheckedModeBanner: false,
+      navigatorKey: appNavigatorKey,
 
       // 🎯 THEME
       theme: ThemeData(
@@ -100,15 +108,20 @@ class LocalServicesApp extends StatelessWidget {
         ),
       ),
 
-      initialRoute: '/home',
+      initialRoute: '/login',
 
       routes: {
         '/': (context) => const LoginScreen(),
         '/login': (context) => const LoginScreen(),
+        '/signup': (context) => const SignupScreen(),
         '/home': (context) => const HomeScreen(),
         '/worker-list': (context) => const WorkerListScreen(),
         '/my-bookings': (context) => const MyBookingsScreen(),
         '/profile': (context) => const ProfileScreen(),
+        '/worker/login': (context) => const WorkerLoginScreen(),
+        '/worker/complete-profile': (context) => const WorkerProfileCompletionScreen(),
+        '/worker/dashboard': (context) => const WorkerDashboardScreen(),
+        '/worker/bookings': (context) => const WorkerBookingsScreen(),
       },
 
       onGenerateRoute: (settings) {
@@ -125,6 +138,17 @@ class LocalServicesApp extends StatelessWidget {
 
           return MaterialPageRoute(
             builder: (context) => BookingScreen(worker: worker),
+          );
+        }
+
+        if (settings.name == '/worker/booking-detail') {
+          final args = settings.arguments as WorkerBookingDetailArgs;
+
+          return MaterialPageRoute(
+            builder: (context) => BookingDetailScreen(
+              booking: args.booking,
+              session: args.session,
+            ),
           );
         }
 

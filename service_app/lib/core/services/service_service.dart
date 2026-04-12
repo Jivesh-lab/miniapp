@@ -28,15 +28,22 @@ class ServiceItem {
 
 class ServiceService {
   Future<List<ServiceItem>> getServices() async {
-    final response = await http.get(
-      ApiService.uri('/services'),
-      headers: ApiService.headers,
-    );
+    try {
+      final response = await ApiService.getJson('/services', useAuthHeaders: true);
+      final body = await ApiService.parseAuthenticatedResponse(
+        response,
+        clearSession: ApiService.clearUserSession,
+        loginRoute: '/login',
+      );
+      final data = (body['data'] as List<dynamic>? ?? <dynamic>[])
+          .cast<Map<String, dynamic>>();
 
-    final body = ApiService.parseResponse(response);
-    final data = (body['data'] as List<dynamic>? ?? <dynamic>[])
-        .cast<Map<String, dynamic>>();
-
-    return data.map(ServiceItem.fromJson).toList();
+      return data.map(ServiceItem.fromJson).toList();
+    } catch (error) {
+      if (error is Exception) {
+        rethrow;
+      }
+      throw Exception('Failed to load services');
+    }
   }
 }

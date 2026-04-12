@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/api_service.dart';
 import '../../core/services/user_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -12,13 +13,74 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final UserService _userService = UserService();
-  static const String _userId = '12345';
+  String _userId = '';
+  String _userName = 'Loading...';
+  String _userPhone = '-';
+  String _userEmail = '-';
+  bool _isProfileLoading = true;
 
-  // User data (dummy)
-  final String userName = 'John Doe';
-  final String userPhone = '+91 98765 43210';
-  final String userEmail = 'john.doe@example.com';
-  final String userAvatar = 'JD';
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  String get _userAvatar {
+    final normalized = _userName.trim();
+    if (normalized.isEmpty || normalized == 'Loading...') {
+      return 'U';
+    }
+
+    final parts = normalized.split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+    if (parts.isEmpty) {
+      return 'U';
+    }
+
+    if (parts.length == 1) {
+      return parts.first.substring(0, 1).toUpperCase();
+    }
+
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+  }
+
+  Future<void> _loadProfile() async {
+    if (mounted) {
+      setState(() {
+        _isProfileLoading = true;
+      });
+    }
+
+    try {
+      final profile = await _userService.getUserProfile();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _userId = (profile['_id'] ?? profile['id'] ?? '').toString();
+        _userName = (profile['name'] ?? '').toString().trim().isEmpty
+            ? 'User'
+            : (profile['name'] ?? '').toString().trim();
+        _userPhone = (profile['phone'] ?? '-').toString();
+        _userEmail = (profile['email'] ?? '-').toString();
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load profile')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProfileLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,6 +212,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildProfileCard(bool isMobile, double padding) {
+    if (_isProfileLoading) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: const Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -183,7 +263,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 child: Center(
                   child: Text(
-                    userAvatar,
+                    _userAvatar,
                     style: GoogleFonts.inter(
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
@@ -199,7 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      userName,
+                      _userName,
                       style: GoogleFonts.inter(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
@@ -208,7 +288,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      userEmail,
+                      _userEmail,
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -246,7 +326,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                userPhone,
+                _userPhone,
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   color: Colors.grey.shade700,
@@ -338,14 +418,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showEditProfileModal() {
+    final nameController = TextEditingController(text: _userName);
+    final emailController = TextEditingController(text: _userEmail);
+    final phoneController = TextEditingController(text: _userPhone);
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      isScrollControlled: true,
       builder: (context) {
         return Container(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.fromLTRB(
+            24,
+            24,
+            24,
+            24 + MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,32 +460,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              _buildEditField('Name', userName),
+              _buildEditField('Name', nameController),
               const SizedBox(height: 16),
-              _buildEditField('Email', userEmail),
+              _buildEditField('Email', emailController, enabled: false),
               const SizedBox(height: 16),
-              _buildEditField('Phone', userPhone),
+              _buildEditField('Phone', phoneController),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Profile updated successfully!',
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w500,
+                  onPressed: () async {
+                    final nextName = nameController.text.trim();
+                    final nextPhone = phoneController.text.trim();
+
+                    if (nextName.isEmpty || nextPhone.isEmpty) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Name and phone are required')),
+                      );
+                      return;
+                    }
+
+                    if (_userId.isEmpty) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Unable to identify user')),
+                      );
+                      return;
+                    }
+
+                    try {
+                      final updated = await _userService.updateUserProfile(
+                        userId: _userId,
+                        name: nextName,
+                        phone: nextPhone,
+                      );
+
+                      if (!mounted) return;
+
+                      setState(() {
+                        _userName = (updated['name'] ?? nextName).toString();
+                        _userPhone = (updated['phone'] ?? nextPhone).toString();
+                      });
+
+                      Navigator.pop(context);
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Profile updated successfully!',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          backgroundColor: Colors.green,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        backgroundColor: Colors.green,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    );
+                      );
+                    } catch (_) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Failed to update profile')),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -421,6 +551,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _showFavorites() async {
+    if (_userId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile not loaded yet')),
+      );
+      return;
+    }
+
     try {
       final favorites = await _userService.getFavoriteWorkers(_userId);
       if (!mounted) return;
@@ -466,7 +603,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Widget _buildEditField(String label, String value) {
+  Widget _buildEditField(
+    String label,
+    TextEditingController controller, {
+    bool enabled = true,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -480,7 +621,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         const SizedBox(height: 6),
         TextField(
-          controller: TextEditingController(text: value),
+          controller: controller,
+          enabled: enabled,
           style: GoogleFonts.inter(fontSize: 14),
           decoration: InputDecoration(
             contentPadding: const EdgeInsets.symmetric(
@@ -744,24 +886,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Logged out successfully!',
-                      style: GoogleFonts.inter(
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    backgroundColor: Colors.green,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                );
-              },
+              onPressed: _logout,
               child: Text(
                 'Logout',
                 style: GoogleFonts.inter(
@@ -775,5 +900,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+  }
+
+  Future<void> _logout() async {
+    Navigator.pop(context);
+
+    try {
+      await ApiService.logoutUser();
+    } catch (_) {
+      // Local logout still succeeds even if the network request fails.
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 }
