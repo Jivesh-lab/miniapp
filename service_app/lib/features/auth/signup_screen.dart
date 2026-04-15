@@ -23,6 +23,9 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   bool _didReadRouteArgs = false;
 
+  static final RegExp _phonePattern = RegExp(r'^[0-9]{10,15}$');
+  static final RegExp _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -229,8 +232,12 @@ class _SignupScreenState extends State<SignupScreen> {
                             prefixIcon: Icon(Icons.person_outline),
                           ),
                           validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
+                            final text = value?.trim() ?? '';
+                            if (text.isEmpty) {
                               return 'Name is required';
+                            }
+                            if (text.length < 2) {
+                              return 'Name must be at least 2 characters';
                             }
                             return null;
                           },
@@ -248,7 +255,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             if (text.isEmpty) {
                               return 'Phone is required';
                             }
-                            if (!RegExp(r'^[0-9]{10,15}$').hasMatch(text)) {
+                            if (!_phonePattern.hasMatch(text)) {
                               return 'Enter a valid phone number';
                             }
                             return null;
@@ -268,7 +275,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               if (text.isEmpty) {
                                 return 'Email is required';
                               }
-                              if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(text)) {
+                              if (!_emailPattern.hasMatch(text)) {
                                 return 'Enter a valid email';
                               }
                               return null;

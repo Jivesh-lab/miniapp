@@ -20,6 +20,9 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
+  static final RegExp _phonePattern = RegExp(r'^[0-9]{10,15}$');
+  static final RegExp _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+
   @override
   void dispose() {
     _identifierController.dispose();
@@ -146,9 +149,31 @@ class _LoginScreenState extends State<LoginScreen> {
                               prefixIcon: const Icon(Icons.person_outline),
                             ),
                             validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
+                              final text = value?.trim() ?? '';
+
+                              if (text.isEmpty) {
                                 return 'Identifier is required';
                               }
+
+                              if (_selectedRole == 'worker') {
+                                if (!_phonePattern.hasMatch(text)) {
+                                  return 'Worker login requires a valid phone number';
+                                }
+                                return null;
+                              }
+
+                              final isEmail = text.contains('@');
+                              if (isEmail) {
+                                if (!_emailPattern.hasMatch(text)) {
+                                  return 'Enter a valid email address';
+                                }
+                                return null;
+                              }
+
+                              if (!_phonePattern.hasMatch(text)) {
+                                return 'Enter a valid phone number';
+                              }
+
                               return null;
                             },
                           ),

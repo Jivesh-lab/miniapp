@@ -4,6 +4,10 @@ export const isValidPhone = (phone) => {
   return /^[0-9]{10,15}$/.test(String(phone ?? "").trim());
 };
 
+export const isValidEmail = (email) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email ?? "").trim().toLowerCase());
+};
+
 export const isStrongEnoughPassword = (password) => {
   return typeof password === "string" && password.trim().length >= 6;
 };

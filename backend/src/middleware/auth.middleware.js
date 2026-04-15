@@ -17,8 +17,6 @@ const extractToken = (req) => {
 export const authMiddleware = async (req, res, next) => {
   const token = extractToken(req);
 
-  console.log("TOKEN:", token);
-
   if (!token) {
     return res.status(401).json({ message: "No token, unauthorized" });
   }
@@ -31,8 +29,6 @@ export const authMiddleware = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-
-    console.log("DECODED:", decoded);
 
     if (!decoded?.id || !decoded?.role) {
       return res.status(401).json({ message: "Invalid token" });
@@ -60,7 +56,6 @@ export const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ message: "Token expired, login again" });
     }
 
-    console.log("DECODED:", "invalid token");
     return res.status(401).json({ message: "Invalid token" });
   }
 };

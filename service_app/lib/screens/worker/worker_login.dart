@@ -18,6 +18,8 @@ class _WorkerLoginScreenState extends State<WorkerLoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
+  static final RegExp _phonePattern = RegExp(r'^[0-9]{10,15}$');
+
   void _goBack() {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
@@ -120,8 +122,13 @@ class _WorkerLoginScreenState extends State<WorkerLoginScreen> {
                           prefixIcon: Icon(Icons.person_outline),
                         ),
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
+                          final text = value?.trim() ?? '';
+
+                          if (text.isEmpty) {
                             return 'Phone is required';
+                          }
+                          if (!_phonePattern.hasMatch(text)) {
+                            return 'Enter a valid phone number';
                           }
                           return null;
                         },

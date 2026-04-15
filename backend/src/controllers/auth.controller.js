@@ -4,13 +4,16 @@ import jwt from "jsonwebtoken";
 import Blacklist from "../models/blacklist.model.js";
 import User from "../models/user.model.js";
 import Worker from "../models/worker.model.js";
-import { isStrongEnoughPassword, isValidPhone } from "../utils/validators.js";
+import { isStrongEnoughPassword, isValidEmail, isValidPhone } from "../utils/validators.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_worker_jwt_secret";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 
 const normalizePhone = (phone) => String(phone || "").trim();
 const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
+const normalizeName = (name) => String(name || "").trim();
+
+const isEmailIdentifier = (identifier) => String(identifier).includes("@");
 
 const signToken = (id, role) => {
   try {
@@ -84,13 +87,18 @@ export const registerUser = async (req, res) => {
 
     const normalizedPhone = normalizePhone(phone);
     const normalizedEmail = normalizeEmail(email);
+    const normalizedName = normalizeName(name);
+
+    if (!normalizedName) {
+      return sendValidationError(res, "name is required");
+    }
 
     if (!isValidPhone(normalizedPhone)) {
       return sendValidationError(res, "Invalid phone format");
     }
 
-    if (!normalizedEmail) {
-      return sendValidationError(res, "Email is required");
+    if (!normalizedEmail || !isValidEmail(normalizedEmail)) {
+      return sendValidationError(res, "Invalid email format");
     }
 
     if (!isStrongEnoughPassword(password)) {
@@ -114,7 +122,7 @@ export const registerUser = async (req, res) => {
     const passwordHash = await bcrypt.hash(String(password), 10);
 
     const user = await User.create({
-      name: String(name).trim(),
+      name: normalizedName,
       phone: normalizedPhone,
       email: normalizedEmail,
       password: passwordHash,
@@ -144,6 +152,11 @@ export const registerWorker = async (req, res) => {
     }
 
     const normalizedPhone = normalizePhone(phone);
+    const normalizedName = normalizeName(name);
+
+    if (!normalizedName) {
+      return sendValidationError(res, "name is required");
+    }
 
     if (!isValidPhone(normalizedPhone)) {
       return sendValidationError(res, "Invalid phone format");
@@ -165,7 +178,7 @@ export const registerWorker = async (req, res) => {
     const passwordHash = await bcrypt.hash(String(password), 10);
 
     const worker = await Worker.create({
-      name: String(name).trim(),
+      name: normalizedName,
       phone: normalizedPhone,
       password: passwordHash,
       role: "worker",
@@ -191,14 +204,35 @@ export const registerWorker = async (req, res) => {
 
 export const login = async (req, res) => {
   try {
-    const { phone, identifier, emailOrPhone, password } = req.body ?? {};
-    const loginValue = normalizePhone(phone || identifier || emailOrPhone || "");
+    const { phone, identifier, emailOrPhone, password, role } = req.body ?? {};
+    const loginValue = String(phone || identifier || emailOrPhone || "").trim();
+    const requestedRole = String(role || "").trim().toLowerCase();
 
     if (!loginValue || !password) {
       return sendValidationError(res, "phone or email and password are required");
     }
 
-    if (!String(loginValue).includes("@")) {
+    if (requestedRole && !["user", "worker"].includes(requestedRole)) {
+      return sendValidationError(res, "role must be either user or worker");
+    }
+
+    const loginAsEmail = isEmailIdentifier(loginValue);
+
+    if (loginAsEmail) {
+      if (!isValidEmail(loginValue)) {
+        return sendValidationError(res, "Invalid email format");
+      }
+
+      if (requestedRole === "worker") {
+        return sendValidationError(res, "Worker login requires a phone number");
+      }
+    } else if (!isValidPhone(loginValue)) {
+      return sendValidationError(res, "Invalid phone format");
+    }
+
+    const allowWorkerLogin = !requestedRole || requestedRole === "worker";
+
+    if (!loginAsEmail && allowWorkerLogin) {
       const worker = await Worker.findOne({ phone: loginValue }).select("+password");
 
       if (worker) {
@@ -218,6 +252,7 @@ export const login = async (req, res) => {
           message: "Login successful",
           token,
           role: "worker",
+          profileComplete: isProfileComplete(worker),
           id: worker._id,
           data: {
             ...serializeWorker(worker.toObject()),
@@ -228,7 +263,14 @@ export const login = async (req, res) => {
       }
     }
 
-    const userQuery = String(loginValue).includes("@")
+    if (requestedRole === "worker") {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
+    const userQuery = loginAsEmail
       ? { email: loginValue.toLowerCase() }
       : { $or: [{ phone: loginValue }, { userId: loginValue }] };
 

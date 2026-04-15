@@ -15,16 +15,14 @@ import { authMiddleware, authorizeRoles } from "../middleware/auth.middleware.js
 
 const router = express.Router();
 
-router.use(authMiddleware);
-
 // GET /api/workers/profile
-router.get("/profile", authorizeRoles("worker"), getWorkerProfile);
+router.get("/profile", authMiddleware, authorizeRoles("worker"), getWorkerProfile);
 
 // PUT /api/workers/profile
-router.put("/profile", authorizeRoles("worker"), updateWorkerProfile);
+router.put("/profile", authMiddleware, authorizeRoles("worker"), updateWorkerProfile);
 
 // GET /api/workers/bookings?page=1&limit=10&status=pending
-router.get("/bookings", authorizeRoles("worker"), getWorkerDashboardBookings);
+router.get("/bookings", authMiddleware, authorizeRoles("worker"), getWorkerDashboardBookings);
 
 // GET /api/workers/search?q=...
 router.get("/search", searchWorkers);

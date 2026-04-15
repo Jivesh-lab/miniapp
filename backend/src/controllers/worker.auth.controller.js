@@ -26,15 +26,17 @@ const isProfileComplete = (worker) => {
 export const registerWorker = async (req, res) => {
   try {
     const { name, phone, password, serviceId, skills, location, price } = req.body;
+    const normalizedName = String(name || "").trim();
+    const normalizedPhone = String(phone || "").trim();
 
-    if (!name || !phone || !password || !serviceId || location === undefined || price === undefined) {
+    if (!normalizedName || !normalizedPhone || !password || !serviceId || location === undefined || price === undefined) {
       return sendWorkerValidationError(
         res,
         "name, phone, password, serviceId, location, and price are required"
       );
     }
 
-    if (!isValidPhone(phone)) {
+    if (!isValidPhone(normalizedPhone)) {
       return sendWorkerValidationError(res, "Invalid phone format");
     }
 
@@ -46,7 +48,6 @@ export const registerWorker = async (req, res) => {
       return sendWorkerValidationError(res, "serviceId must be a valid ObjectId");
     }
 
-    const normalizedPhone = String(phone).trim();
     const existing = await Worker.findOne({ phone: normalizedPhone }).lean();
 
     if (existing) {
@@ -56,7 +57,7 @@ export const registerWorker = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const worker = await Worker.create({
-      name,
+      name: normalizedName,
       phone: normalizedPhone,
       password: hashedPassword,
       serviceId,
@@ -93,6 +94,10 @@ export const loginWorker = async (req, res) => {
 
     if (!loginValue || !password) {
       return sendWorkerValidationError(res, "phone and password are required");
+    }
+
+    if (!isValidPhone(loginValue)) {
+      return sendWorkerValidationError(res, "Invalid phone format");
     }
 
     const worker = await Worker.findOne({ phone: loginValue }).select("+password");
