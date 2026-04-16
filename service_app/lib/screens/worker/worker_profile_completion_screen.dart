@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/services/service_service.dart';
 import '../../core/utils/error_message_helper.dart';
@@ -8,10 +9,12 @@ class WorkerProfileCompletionScreen extends StatefulWidget {
   const WorkerProfileCompletionScreen({super.key});
 
   @override
-  State<WorkerProfileCompletionScreen> createState() => _WorkerProfileCompletionScreenState();
+  State<WorkerProfileCompletionScreen> createState() =>
+      _WorkerProfileCompletionScreenState();
 }
 
-class _WorkerProfileCompletionScreenState extends State<WorkerProfileCompletionScreen> {
+class _WorkerProfileCompletionScreenState
+    extends State<WorkerProfileCompletionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _priceController = TextEditingController();
   final _locationController = TextEditingController();
@@ -66,12 +69,17 @@ class _WorkerProfileCompletionScreenState extends State<WorkerProfileCompletionS
       _selectedServiceId = (profile['serviceId'] ?? '').toString().isEmpty
           ? (_services.isNotEmpty ? _services.first.id : null)
           : (profile['serviceId'] is Map<String, dynamic>
-              ? (profile['serviceId']['_id'] ?? profile['serviceId']['id'] ?? '').toString()
-              : profile['serviceId'].toString());
+                ? (profile['serviceId']['_id'] ??
+                          profile['serviceId']['id'] ??
+                          '')
+                      .toString()
+                : profile['serviceId'].toString());
       _priceController.text = (profile['price'] ?? '').toString();
       _locationController.text = (profile['location'] ?? '').toString();
       _skillsController.text = (profile['skills'] is List)
-          ? (profile['skills'] as List<dynamic>).map((skill) => skill.toString()).join(', ')
+          ? (profile['skills'] as List<dynamic>)
+                .map((skill) => skill.toString())
+                .join(', ')
           : '';
       _loadError = loadError;
       _isLoading = false;
@@ -93,7 +101,10 @@ class _WorkerProfileCompletionScreenState extends State<WorkerProfileCompletionS
     setState(() => _isSaving = true);
 
     try {
-      final normalizedLocation = _locationController.text.trim().replaceAll(RegExp(r'\s+'), ' ');
+      final normalizedLocation = _locationController.text.trim().replaceAll(
+        RegExp(r'\s+'),
+        ' ',
+      );
       final parsedPrice = num.parse(_priceController.text.trim());
       final normalizedSkills = _skillsController.text
           .split(',')
@@ -112,7 +123,10 @@ class _WorkerProfileCompletionScreenState extends State<WorkerProfileCompletionS
       final session = await _workerApi.getSavedSession();
       if (session != null) {
         try {
-          await _workerApi.getWorkerBookings(session: session, forceRefresh: true);
+          await _workerApi.getWorkerBookings(
+            session: session,
+            forceRefresh: true,
+          );
         } catch (_) {
           // Dashboard will still load and handle this gracefully.
         }
@@ -122,7 +136,10 @@ class _WorkerProfileCompletionScreenState extends State<WorkerProfileCompletionS
         return;
       }
 
-      ErrorMessageHelper.showSnackBar(context, 'Profile completed successfully');
+      ErrorMessageHelper.showSnackBar(
+        context,
+        'Profile completed successfully',
+      );
       Navigator.pushReplacementNamed(
         context,
         '/worker/dashboard',
@@ -144,136 +161,182 @@ class _WorkerProfileCompletionScreenState extends State<WorkerProfileCompletionS
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Complete Profile'),
-      ),
+      backgroundColor: const Color(0xFFF3F6FB),
+      appBar: AppBar(title: const Text('Complete Profile')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 460),
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(22),
-                      child: Form(
-                        key: _formKey,
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF1D4ED8), Color(0xFF2563EB)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (_loadError != null) ...[
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.amber.shade50,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.amber.shade200),
-                                ),
-                                child: Text(
-                                  _loadError!,
-                                  style: TextStyle(color: Colors.amber.shade900),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-                            const Text(
+                            Text(
                               'Complete your worker profile',
-                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                              style: GoogleFonts.inter(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Add your service, price, location, and skills so customers can find you.',
-                              style: TextStyle(color: Colors.grey.shade700),
-                            ),
-                            const SizedBox(height: 20),
-                            DropdownButtonFormField<String>(
-                              value: _selectedServiceId,
-                              isExpanded: true,
-                              decoration: const InputDecoration(
-                                labelText: 'Service',
-                                prefixIcon: Icon(Icons.work_outline),
-                              ),
-                              items: _services
-                                  .map(
-                                    (service) => DropdownMenuItem<String>(
-                                      value: service.id,
-                                      child: Text(service.name),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedServiceId = value;
-                                });
-                              },
-                              disabledHint: const Text('No services available'),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Service is required';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _priceController,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Price',
-                                prefixIcon: Icon(Icons.currency_rupee),
-                              ),
-                              validator: (value) {
-                                final text = value?.trim() ?? '';
-                                if (text.isEmpty) {
-                                  return 'Price is required';
-                                }
-                                if (num.tryParse(text) == null) {
-                                  return 'Enter a valid price';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _locationController,
-                              decoration: const InputDecoration(
-                                labelText: 'Location',
-                                prefixIcon: Icon(Icons.location_on_outlined),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Location is required';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _skillsController,
-                              decoration: const InputDecoration(
-                                labelText: 'Skills (comma separated)',
-                                prefixIcon: Icon(Icons.badge_outlined),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            SizedBox(
-                              height: 48,
-                              child: ElevatedButton(
-                                onPressed: (_isSaving || _services.isEmpty) ? null : _save,
-                                child: _isSaving
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
-                                      )
-                                    : Text(_services.isEmpty ? 'Load services first' : 'Save Profile'),
+                              'Add service, pricing, location, and skills so customers can discover and book you quickly.',
+                              style: GoogleFonts.inter(
+                                color: Colors.white.withOpacity(0.92),
+                                fontSize: 13,
+                                height: 1.35,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.all(22),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (_loadError != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.shade50,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.amber.shade200,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    _loadError!,
+                                    style: TextStyle(
+                                      color: Colors.amber.shade900,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+                              DropdownButtonFormField<String>(
+                                value: _selectedServiceId,
+                                isExpanded: true,
+                                decoration: const InputDecoration(
+                                  labelText: 'Service',
+                                  prefixIcon: Icon(Icons.work_outline),
+                                ),
+                                items: _services
+                                    .map(
+                                      (service) => DropdownMenuItem<String>(
+                                        value: service.id,
+                                        child: Text(service.name),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedServiceId = value;
+                                  });
+                                },
+                                disabledHint: const Text(
+                                  'No services available',
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Service is required';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _priceController,
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Price',
+                                  prefixIcon: Icon(Icons.currency_rupee),
+                                ),
+                                validator: (value) {
+                                  final text = value?.trim() ?? '';
+                                  if (text.isEmpty) {
+                                    return 'Price is required';
+                                  }
+                                  if (num.tryParse(text) == null) {
+                                    return 'Enter a valid price';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _locationController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Location',
+                                  prefixIcon: Icon(Icons.location_on_outlined),
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Location is required';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _skillsController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Skills (comma separated)',
+                                  prefixIcon: Icon(Icons.badge_outlined),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              SizedBox(
+                                height: 50,
+                                child: ElevatedButton.icon(
+                                  onPressed: (_isSaving || _services.isEmpty)
+                                      ? null
+                                      : _save,
+                                  icon: _isSaving
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(Icons.save_outlined),
+                                  label: Text(
+                                    _services.isEmpty
+                                        ? 'Load services first'
+                                        : 'Save Profile',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

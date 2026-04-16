@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/services/api_exception.dart';
 import '../../models/booking_model.dart';
 import '../../core/utils/error_message_helper.dart';
+import '../../core/widgets/responsive_layout.dart';
 import '../../services/api_service.dart';
 import 'booking_detail.dart';
 
@@ -118,7 +120,9 @@ class _WorkerBookingsScreenState extends State<WorkerBookingsScreen> {
       return bookings;
     }
 
-    return bookings.where((booking) => booking.statusValue == _selectedFilter).toList();
+    return bookings
+        .where((booking) => booking.statusValue == _selectedFilter)
+        .toList();
   }
 
   Future<void> _refresh() async {
@@ -137,6 +141,7 @@ class _WorkerBookingsScreenState extends State<WorkerBookingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF3F6FB),
       appBar: AppBar(
         leading: IconButton(
           onPressed: _goBack,
@@ -146,17 +151,19 @@ class _WorkerBookingsScreenState extends State<WorkerBookingsScreen> {
       ),
       body: Column(
         children: [
-          _FilterBar(
-            selectedFilter: _selectedFilter,
-            onChanged: (filter) {
-              setState(() {
-                _selectedFilter = filter;
-              });
-            },
+          ResponsiveContent(
+            maxWidth: 1120,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: _FilterBar(
+              selectedFilter: _selectedFilter,
+              onChanged: (filter) {
+                setState(() {
+                  _selectedFilter = filter;
+                });
+              },
+            ),
           ),
-          Expanded(
-            child: _buildBody(),
-          ),
+          Expanded(child: _buildBody()),
         ],
       ),
     );
@@ -176,64 +183,63 @@ class _WorkerBookingsScreenState extends State<WorkerBookingsScreen> {
 
     final bookings = _applyFilter(_bookings);
     if (bookings.isEmpty) {
-      return const Center(child: Text('No bookings found'));
+      return Center(
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: Text(
+            'No bookings found for this filter',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
+        ),
+      );
     }
 
     return RefreshIndicator(
       onRefresh: _refresh,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: bookings.length,
-        itemBuilder: (context, index) {
-          final booking = bookings[index];
-          return Card(
-            child: ListTile(
-              onTap: () async {
-                final session = _session;
-                if (session == null) {
-                  ErrorMessageHelper.showSnackBar(context, 'Please login again');
-                  return;
-                }
+      child: ResponsiveContent(
+        maxWidth: 1120,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: ListView.builder(
+          itemCount: bookings.length,
+          itemBuilder: (context, index) {
+            final booking = bookings[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _BookingCard(
+                booking: booking,
+                onTap: () async {
+                  final session = _session;
+                  if (session == null) {
+                    ErrorMessageHelper.showSnackBar(
+                      context,
+                      'Please login again',
+                    );
+                    return;
+                  }
 
-                final updated = await Navigator.pushNamed(
-                  context,
-                  '/worker/booking-detail',
-                  arguments: WorkerBookingDetailArgs(
-                    booking: booking,
-                    session: session,
-                  ),
-                );
+                  final updated = await Navigator.pushNamed(
+                    context,
+                    '/worker/booking-detail',
+                    arguments: WorkerBookingDetailArgs(
+                      booking: booking,
+                      session: session,
+                    ),
+                  );
 
-                if (updated == true) {
-                  await _refresh();
-                }
-              },
-              title: Text(
-                booking.customerName,
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                  if (updated == true) {
+                    await _refresh();
+                  }
+                },
               ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text('${booking.date} at ${booking.time}'),
-              ),
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: booking.statusColor.withOpacity(0.14),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  booking.statusLabel,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: booking.statusColor,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -243,19 +249,16 @@ class _FilterBar extends StatelessWidget {
   final String selectedFilter;
   final ValueChanged<String> onChanged;
 
-  const _FilterBar({
-    required this.selectedFilter,
-    required this.onChanged,
-  });
+  const _FilterBar({required this.selectedFilter, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
     const filters = ['all', 'pending', 'confirmed', 'completed'];
 
     return SizedBox(
-      height: 54,
+      height: 56,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
         scrollDirection: Axis.horizontal,
         itemCount: filters.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
@@ -264,9 +267,21 @@ class _FilterBar extends StatelessWidget {
           final active = selectedFilter == filter;
 
           return ChoiceChip(
-            label: Text(_label(filter)),
+            label: Text(
+              _label(filter),
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+            ),
             selected: active,
             onSelected: (_) => onChanged(filter),
+            showCheckmark: false,
+            side: BorderSide(
+              color: active ? const Color(0xFF2563EB) : const Color(0xFFD1D5DB),
+            ),
+            selectedColor: const Color(0xFFDBEAFE),
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
           );
         },
       ),
@@ -294,10 +309,7 @@ class _ErrorView extends StatelessWidget {
   final String message;
   final Future<void> Function() onRetry;
 
-  const _ErrorView({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ErrorView({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -309,9 +321,88 @@ class _ErrorView extends StatelessWidget {
           children: [
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
+            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingCard extends StatelessWidget {
+  final WorkerBooking booking;
+  final VoidCallback onTap;
+
+  const _BookingCard({required this.booking, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    booking.customerName,
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: const Color(0xFF111827),
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: booking.statusColor.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    booking.statusLabel,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: booking.statusColor,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 16,
+                  color: Color(0xFF6B7280),
+                ),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    '${booking.date} at ${booking.time}',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF374151),
+                    ),
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
+              ],
             ),
           ],
         ),

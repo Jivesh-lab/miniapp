@@ -6,6 +6,7 @@ import '../../core/models/booking_model.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/booking_service.dart';
 import '../../core/widgets/booking_card.dart';
+import '../../core/widgets/responsive_layout.dart';
 
 class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({Key? key}) : super(key: key);
@@ -51,20 +52,22 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
       if (!mounted) return;
       setState(() {
-        ongoingBookings = allBookings
-            .where(
-              (b) =>
-                  b.status == BookingStatus.pending ||
-                  b.status == BookingStatus.confirmed ||
-                  b.status == BookingStatus.inProgress,
-            )
-            .toList()
-          ..sort((a, b) => b.date.compareTo(a.date));
+        ongoingBookings =
+            allBookings
+                .where(
+                  (b) =>
+                      b.status == BookingStatus.pending ||
+                      b.status == BookingStatus.confirmed ||
+                      b.status == BookingStatus.inProgress,
+                )
+                .toList()
+              ..sort((a, b) => b.date.compareTo(a.date));
 
-        completedBookings = allBookings
-            .where((b) => b.status == BookingStatus.completed)
-            .toList()
-          ..sort((a, b) => b.date.compareTo(a.date));
+        completedBookings =
+            allBookings
+                .where((b) => b.status == BookingStatus.completed)
+                .toList()
+              ..sort((a, b) => b.date.compareTo(a.date));
 
         _isLoading = false;
       });
@@ -152,9 +155,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceFirst('Exception: ', '')),
-          ),
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
         );
       } finally {
         if (mounted) {
@@ -184,9 +185,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                     ),
                   ),
                   IconButton(
-                    onPressed: () => Navigator.of(context).pop(
-                      const _RatingDialogResult(skip: true),
-                    ),
+                    onPressed: () => Navigator.of(
+                      context,
+                    ).pop(const _RatingDialogResult(skip: true)),
                     icon: const Icon(Icons.close),
                   ),
                 ],
@@ -224,7 +225,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: List.generate(5, (index) {
                         final starValue = index + 1;
-                        final isActive = selectedRating != null && starValue <= selectedRating!;
+                        final isActive =
+                            selectedRating != null &&
+                            starValue <= selectedRating!;
 
                         return IconButton(
                           onPressed: () {
@@ -233,8 +236,12 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
                             });
                           },
                           icon: Icon(
-                            isActive ? Icons.star_rounded : Icons.star_border_rounded,
-                            color: isActive ? Colors.amber : Colors.grey.shade400,
+                            isActive
+                                ? Icons.star_rounded
+                                : Icons.star_border_rounded,
+                            color: isActive
+                                ? Colors.amber
+                                : Colors.grey.shade400,
                             size: 30,
                           ),
                           padding: EdgeInsets.zero,
@@ -258,9 +265,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
               actions: [
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pop(
-                      const _RatingDialogResult(skip: true),
-                    );
+                    Navigator.of(
+                      context,
+                    ).pop(const _RatingDialogResult(skip: true));
                   },
                   child: Text(
                     'Skip',
@@ -300,45 +307,50 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isMobile = size.width < 600;
-
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: _buildAppBar(isMobile),
-      body: Column(
-        children: [
-          // Tab Bar
-          Container(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: Colors.grey.shade600,
-              indicatorColor: AppColors.primary,
-              indicatorWeight: 3,
-              labelStyle: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+      appBar: _buildAppBar(),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+
+          return Column(
+            children: [
+              ResponsiveContent(
+                maxWidth: 1100,
+                padding: const EdgeInsets.symmetric(horizontal: 0),
+                child: Container(
+                  color: Colors.white,
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: Colors.grey.shade600,
+                    indicatorColor: AppColors.primary,
+                    indicatorWeight: 3,
+                    labelStyle: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    unselectedLabelStyle: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    tabs: const [
+                      Tab(text: 'Ongoing'),
+                      Tab(text: 'Completed'),
+                    ],
+                  ),
+                ),
               ),
-              unselectedLabelStyle: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-              tabs: const [
-                Tab(text: 'Ongoing'),
-                Tab(text: 'Completed'),
-              ],
-            ),
-          ),
-          // Tab Content
-          Expanded(child: _buildContent(isMobile)),
-        ],
+              Expanded(child: _buildContent(width)),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildContent(bool isMobile) {
+  Widget _buildContent(double width) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -373,13 +385,13 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     return TabBarView(
       controller: _tabController,
       children: [
-        _buildTabContent(ongoingBookings, isMobile),
-        _buildTabContent(completedBookings, isMobile),
+        _buildTabContent(ongoingBookings, width),
+        _buildTabContent(completedBookings, width),
       ],
     );
   }
 
-  PreferredSize _buildAppBar(bool isMobile) {
+  PreferredSize _buildAppBar() {
     return PreferredSize(
       preferredSize: const Size.fromHeight(56),
       child: AppBar(
@@ -427,29 +439,51 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     );
   }
 
-  Widget _buildTabContent(List<BookingModel> bookings, bool isMobile) {
+  Widget _buildTabContent(List<BookingModel> bookings, double width) {
     if (bookings.isEmpty) {
-      return _buildEmptyState(isMobile);
+      return _buildEmptyState(AppBreakpoints.isMobile(width));
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 16 : 24,
-        vertical: 16,
-      ),
-      itemCount: bookings.length,
-      itemBuilder: (context, index) {
-        final booking = bookings[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: BookingCard(
-            booking: booking,
-            onCancel: booking.status == BookingStatus.pending
-                ? () => _cancelBooking(booking.id)
-                : null,
-          ),
-        );
-      },
+    final isWide = width >= 980;
+
+    return ResponsiveContent(
+      maxWidth: 1100,
+      child: isWide
+          ? GridView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              itemCount: bookings.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.28,
+              ),
+              itemBuilder: (context, index) {
+                final booking = bookings[index];
+                return BookingCard(
+                  booking: booking,
+                  onCancel: booking.status == BookingStatus.pending
+                      ? () => _cancelBooking(booking.id)
+                      : null,
+                );
+              },
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              itemCount: bookings.length,
+              itemBuilder: (context, index) {
+                final booking = bookings[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: BookingCard(
+                    booking: booking,
+                    onCancel: booking.status == BookingStatus.pending
+                        ? () => _cancelBooking(booking.id)
+                        : null,
+                  ),
+                );
+              },
+            ),
     );
   }
 
@@ -497,10 +531,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
             _selectedTabIndex == 0
                 ? 'You don\'t have any ongoing bookings'
                 : 'You don\'t have any completed bookings',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
+            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade600),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -537,9 +568,5 @@ class _RatingDialogResult {
   final int? rating;
   final String? comment;
 
-  const _RatingDialogResult({
-    required this.skip,
-    this.rating,
-    this.comment,
-  });
+  const _RatingDialogResult({required this.skip, this.rating, this.comment});
 }

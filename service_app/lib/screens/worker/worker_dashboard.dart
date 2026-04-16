@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/services/api_exception.dart';
 import '../../models/booking_model.dart';
 import '../../core/utils/error_message_helper.dart';
+import '../../core/widgets/responsive_layout.dart';
 import '../../services/api_service.dart';
 
 class WorkerDashboardScreen extends StatefulWidget {
@@ -116,7 +118,11 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
     if (!mounted) {
       return;
     }
-    Navigator.pushNamedAndRemoveUntil(context, '/worker/login', (route) => false);
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/worker/login',
+      (route) => false,
+    );
   }
 
   void _goBack() {
@@ -131,6 +137,7 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF3F6FB),
       appBar: AppBar(
         leading: IconButton(
           onPressed: _goBack,
@@ -138,10 +145,7 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
         ),
         title: const Text('Worker Dashboard'),
         actions: [
-          IconButton(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout),
-          ),
+          IconButton(onPressed: _logout, icon: const Icon(Icons.logout)),
         ],
       ),
       body: _buildBody(),
@@ -161,32 +165,163 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
     }
 
     final total = _bookings.length;
-    final pending = _bookings.where((b) => b.status == WorkerBookingStatus.pending).length;
-    final completed = _bookings.where((b) => b.status == WorkerBookingStatus.completed).length;
+    final pending = _bookings
+        .where((b) => b.status == WorkerBookingStatus.pending)
+        .length;
+    final confirmed = _bookings
+        .where((b) => b.status == WorkerBookingStatus.confirmed)
+        .length;
+    final completed = _bookings
+        .where((b) => b.status == WorkerBookingStatus.completed)
+        .length;
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _StatCard(title: 'Total Bookings', value: total.toString(), color: Colors.black87),
-        const SizedBox(height: 12),
-        _StatCard(title: 'Pending', value: pending.toString(), color: Colors.orange),
-        const SizedBox(height: 12),
-        _StatCard(title: 'Completed', value: completed.toString(), color: Colors.green),
-        const SizedBox(height: 20),
-        ElevatedButton.icon(
-          onPressed: _session == null
-              ? null
-              : () {
-                  Navigator.pushNamed(
-                    context,
-                    '/worker/bookings',
-                    arguments: _session,
-                  );
-                },
-          icon: const Icon(Icons.list_alt),
-          label: const Text('View Bookings'),
-        ),
-      ],
+    return RefreshIndicator(
+      onRefresh: () => _loadDashboard(forceRefresh: true),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final columns = AppBreakpoints.gridColumns(
+            width,
+            mobile: 1,
+            tablet: 2,
+            desktop: 4,
+          );
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            children: [
+              ResponsiveContent(
+                maxWidth: 1120,
+                padding: const EdgeInsets.symmetric(horizontal: 0),
+                child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF1D4ED8), Color(0xFF2563EB)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Today overview',
+                        style: GoogleFonts.inter(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Track your assigned jobs and keep delivery on schedule.',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 18,
+                          height: 1.3,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              ResponsiveContent(
+                maxWidth: 1120,
+                padding: const EdgeInsets.symmetric(horizontal: 0),
+                child: GridView.count(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  childAspectRatio: columns == 1 ? 2.5 : 1.7,
+                  children: [
+                    _StatCard(
+                      title: 'Total Bookings',
+                      value: total.toString(),
+                      icon: Icons.assignment_outlined,
+                      color: const Color(0xFF111827),
+                    ),
+                    _StatCard(
+                      title: 'Pending',
+                      value: pending.toString(),
+                      icon: Icons.schedule,
+                      color: const Color(0xFFF59E0B),
+                    ),
+                    _StatCard(
+                      title: 'Confirmed',
+                      value: confirmed.toString(),
+                      icon: Icons.verified,
+                      color: const Color(0xFF2563EB),
+                    ),
+                    _StatCard(
+                      title: 'Completed',
+                      value: completed.toString(),
+                      icon: Icons.task_alt,
+                      color: const Color(0xFF10B981),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              ResponsiveContent(
+                maxWidth: 1120,
+                padding: const EdgeInsets.symmetric(horizontal: 0),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Quick actions',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Open your bookings to accept, start, or complete work updates.',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: const Color(0xFF6B7280),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _session == null
+                              ? null
+                              : () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/worker/bookings',
+                                    arguments: _session,
+                                  );
+                                },
+                          icon: const Icon(Icons.list_alt),
+                          label: const Text('View Bookings'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -194,26 +329,61 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;
+  final IconData icon;
   final Color color;
 
   const _StatCard({
     required this.title,
     required this.value,
+    required this.icon,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-            Text(
-              value,
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: color),
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: const Color(0xFF6B7280),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: GoogleFonts.inter(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: color,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -226,23 +396,30 @@ class _ErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorState({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ErrorState({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off_rounded, size: 30, color: Colors.grey),
+              const SizedBox(height: 10),
+              Text(message, textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+            ],
+          ),
         ),
       ),
     );

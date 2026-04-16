@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/services/api_exception.dart';
 import '../../core/services/service_service.dart';
 import '../../core/widgets/category_card.dart';
+import '../../core/widgets/responsive_layout.dart';
 import '../../core/widgets/search_bar_widget.dart';
 import '../worker/worker_list_screen.dart';
 
@@ -56,102 +57,56 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isMobile = size.width < 600;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Search Bar
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 16 : 24,
-                vertical: 16,
-              ),
-              child: SearchBarWidget(
-                onChanged: (value) {
-                  // Handle search
-                },
-              ),
-            ),
-            // Section Title
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 16 : 24,
-                vertical: 8,
-              ),
-              child: Text(
-                'Popular Services',
-                style: GoogleFonts.inter(
-                  fontSize: isMobile ? 18 : 20,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1F2937),
-                ),
-              ),
-            ),
-            // Categories Grid
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 16 : 24,
-                vertical: 8,
-              ),
-              child: _buildServicesGrid(isMobile),
-            ),
-            // Featured Section
-            Padding(
-              padding: EdgeInsets.only(
-                left: isMobile ? 16 : 24,
-                right: isMobile ? 16 : 24,
-                top: 24,
-                bottom: 32,
-              ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final isMobile = AppBreakpoints.isMobile(width);
+
+          return SingleChildScrollView(
+            child: ResponsiveContent(
+              maxWidth: 1160,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const SizedBox(height: 16),
+                  SearchBarWidget(onChanged: (value) {}),
+                  const SizedBox(height: 20),
                   Text(
-                    'Why Choose Us?',
+                    'Popular Services',
                     style: GoogleFonts.inter(
-                      fontSize: isMobile ? 18 : 20,
-                      fontWeight: FontWeight.w600,
+                      fontSize: isMobile ? 20 : 24,
+                      fontWeight: FontWeight.w700,
                       color: const Color(0xFF1F2937),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildFeatureItem(
-                    Icons.verified_user,
-                    'Verified Professionals',
-                    'All professionals are verified and background checked',
-                    isMobile,
+                  _buildServicesGrid(width),
+                  const SizedBox(height: 28),
+                  Text(
+                    'Why Choose Us?',
+                    style: GoogleFonts.inter(
+                      fontSize: isMobile ? 20 : 24,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1F2937),
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  _buildFeatureItem(
-                    Icons.shield,
-                    'Secure Payments',
-                    'Transparent pricing with no hidden charges',
-                    isMobile,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildFeatureItem(
-                    Icons.schedule,
-                    'Quick Booking',
-                    'Book services within minutes at your convenience',
-                    isMobile,
-                  ),
+                  _buildFeatureGrid(width),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
       bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
-  Widget _buildServicesGrid(bool isMobile) {
+  Widget _buildServicesGrid(double width) {
     if (_isLoadingServices) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -174,14 +129,21 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    final columns = AppBreakpoints.gridColumns(
+      width,
+      mobile: 2,
+      tablet: 3,
+      desktop: 4,
+    );
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: isMobile ? 2 : 4,
-        crossAxisSpacing: isMobile ? 12 : 16,
-        mainAxisSpacing: isMobile ? 12 : 16,
-        childAspectRatio: 1,
+        crossAxisCount: columns,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: columns >= 4 ? 1.05 : 1,
       ),
       itemCount: _services.length,
       itemBuilder: (context, index) {
@@ -195,6 +157,45 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildFeatureGrid(double width) {
+    final isDesktop = AppBreakpoints.isDesktop(width);
+    final itemWidth = isDesktop ? ((width - 32) / 2) : width;
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        SizedBox(
+          width: itemWidth,
+          child: _buildFeatureItem(
+            Icons.verified_user,
+            'Verified Professionals',
+            'All professionals are verified and background checked',
+            AppBreakpoints.isMobile(width),
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: _buildFeatureItem(
+            Icons.shield,
+            'Secure Payments',
+            'Transparent pricing with no hidden charges',
+            AppBreakpoints.isMobile(width),
+          ),
+        ),
+        SizedBox(
+          width: itemWidth,
+          child: _buildFeatureItem(
+            Icons.schedule,
+            'Quick Booking',
+            'Book services within minutes at your convenience',
+            AppBreakpoints.isMobile(width),
+          ),
+        ),
+      ],
     );
   }
 
@@ -288,11 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: const Color(0xFF2563EB).withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: AppColors.primary,
-              size: 20,
-            ),
+            child: Icon(icon, color: AppColors.primary, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -372,11 +369,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _navigateToWorkerList(BuildContext context, String serviceId, String serviceName) {
+  void _navigateToWorkerList(
+    BuildContext context,
+    String serviceId,
+    String serviceName,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => WorkerListScreen(serviceId: serviceId, serviceName: serviceName),
+        builder: (_) =>
+            WorkerListScreen(serviceId: serviceId, serviceName: serviceName),
       ),
     );
   }

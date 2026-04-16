@@ -564,34 +564,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       showModalBottomSheet(
         context: context,
+        isScrollControlled: true,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         builder: (context) {
-          if (favorites.isEmpty) {
-            return const SizedBox(
-              height: 180,
-              child: Center(child: Text('No favorite workers yet')),
-            );
-          }
+          final maxHeight = MediaQuery.of(context).size.height * 0.8;
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            shrinkWrap: true,
-            itemCount: favorites.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final worker = favorites[index];
-              return ListTile(
-                tileColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade200),
+          return SafeArea(
+            top: false,
+            child: SizedBox(
+              height: maxHeight,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Favorite Workers',
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1F2937),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: favorites.isEmpty
+                          ? const Center(child: Text('No favorite workers yet'))
+                          : ListView.separated(
+                              itemCount: favorites.length,
+                              separatorBuilder: (_, __) => const SizedBox(height: 8),
+                              itemBuilder: (context, index) {
+                                final worker = favorites[index];
+                                return ListTile(
+                                  tileColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(color: Colors.grey.shade200),
+                                  ),
+                                  title: Text(worker.name),
+                                  subtitle: Text('₹${worker.pricePerHour} • ${worker.rating}★'),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
-                title: Text(worker.name),
-                subtitle: Text('₹${worker.pricePerHour} • ${worker.rating}★'),
-              );
-            },
+              ),
+            ),
           );
         },
       );
@@ -653,54 +685,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showSettingsModal() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
+        final maxHeight = MediaQuery.of(context).size.height * 0.8;
+
+        return SafeArea(
+          top: false,
+          child: SizedBox(
+            height: maxHeight,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Settings',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          _buildSettingsTile(
+                            'Push Notifications',
+                            'Receive booking updates',
+                            true,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildSettingsTile(
+                            'Email Notifications',
+                            'Receive email updates',
+                            true,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildSettingsTile(
+                            'SMS Notifications',
+                            'Receive SMS updates',
+                            false,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              Text(
-                'Settings',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1F2937),
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildSettingsTile(
-                'Push Notifications',
-                'Receive booking updates',
-                true,
-              ),
-              const SizedBox(height: 16),
-              _buildSettingsTile(
-                'Email Notifications',
-                'Receive email updates',
-                true,
-              ),
-              const SizedBox(height: 16),
-              _buildSettingsTile(
-                'SMS Notifications',
-                'Receive SMS updates',
-                false,
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -745,60 +793,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showHelpModal() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
+        final maxHeight = MediaQuery.of(context).size.height * 0.8;
+
+        return SafeArea(
+          top: false,
+          child: SizedBox(
+            height: maxHeight,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Help & Support',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          _buildHelpItem(
+                            'FAQ',
+                            'Frequently asked questions',
+                            Icons.help_outline,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildHelpItem(
+                            'Contact Us',
+                            'Get in touch with support',
+                            Icons.email_outlined,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildHelpItem(
+                            'Privacy Policy',
+                            'View our privacy policy',
+                            Icons.privacy_tip_outlined,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildHelpItem(
+                            'Terms & Conditions',
+                            'View terms & conditions',
+                            Icons.description_outlined,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              Text(
-                'Help & Support',
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1F2937),
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildHelpItem(
-                'FAQ',
-                'Frequently asked questions',
-                Icons.help_outline,
-              ),
-              const SizedBox(height: 12),
-              _buildHelpItem(
-                'Contact Us',
-                'Get in touch with support',
-                Icons.email_outlined,
-              ),
-              const SizedBox(height: 12),
-              _buildHelpItem(
-                'Privacy Policy',
-                'View our privacy policy',
-                Icons.privacy_tip_outlined,
-              ),
-              const SizedBox(height: 12),
-              _buildHelpItem(
-                'Terms & Conditions',
-                'View terms & conditions',
-                Icons.description_outlined,
-              ),
-            ],
+            ),
           ),
         );
       },

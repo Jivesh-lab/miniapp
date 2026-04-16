@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/models/worker_model.dart';
 import '../../core/utils/error_message_helper.dart';
 import '../../core/services/worker_service.dart';
+import '../../core/widgets/responsive_layout.dart';
 import '../../core/widgets/search_bar_widget.dart';
 import '../../core/widgets/worker_card.dart';
 import 'worker_detail_screen.dart';
@@ -12,11 +13,8 @@ class WorkerListScreen extends StatefulWidget {
   final String? serviceId;
   final String? serviceName;
 
-  const WorkerListScreen({
-    Key? key,
-    this.serviceId,
-    this.serviceName,
-  }) : super(key: key);
+  const WorkerListScreen({Key? key, this.serviceId, this.serviceName})
+    : super(key: key);
 
   @override
   State<WorkerListScreen> createState() => _WorkerListScreenState();
@@ -68,7 +66,10 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ErrorMessageHelper.showSnackBar(context, ErrorMessageHelper.workerList(e));
+      ErrorMessageHelper.showSnackBar(
+        context,
+        ErrorMessageHelper.workerList(e),
+      );
       setState(() {
         _errorMessage = ErrorMessageHelper.workerList(e);
         _isLoading = false;
@@ -78,68 +79,68 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isMobile = size.width < 600;
-
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: _buildAppBar(isMobile),
-      body: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(isMobile ? 16 : 24, 12, isMobile ? 16 : 24, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SearchBarWidget(
-                    hintText: 'Search workers or skills',
-                    onChanged: (value) {
-                      _searchQuery = value;
-                      _fetchWorkers();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: _openFilterModal,
-                  icon: const Icon(Icons.tune),
-                ),
-              ],
-            ),
-          ),
-          // Filter/Sort Section
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 16 : 24,
-              vertical: 12,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
+      appBar: _buildAppBar(),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+
+          return Column(
+            children: [
+              ResponsiveContent(
+                maxWidth: 1160,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    Row(
                       children: [
-                        _buildSortChip('Nearest', 'nearest', isMobile),
+                        Expanded(
+                          child: SearchBarWidget(
+                            hintText: 'Search workers or skills',
+                            onChanged: (value) {
+                              _searchQuery = value;
+                              _fetchWorkers();
+                            },
+                          ),
+                        ),
                         const SizedBox(width: 8),
-                        _buildSortChip('Rating', 'rating', isMobile),
-                        const SizedBox(width: 8),
-                        _buildSortChip('Price', 'price', isMobile),
+                        IconButton(
+                          onPressed: _openFilterModal,
+                          icon: const Icon(Icons.tune),
+                        ),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildSortChip('Nearest', 'nearest'),
+                            const SizedBox(width: 8),
+                            _buildSortChip('Rating', 'rating'),
+                            const SizedBox(width: 8),
+                            _buildSortChip('Price', 'price'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          // Worker List
-          Expanded(child: _buildBodyContent(isMobile)),
-        ],
+              ),
+              Expanded(child: _buildBodyContent(width)),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildBodyContent(bool isMobile) {
+  Widget _buildBodyContent(double width) {
+    final isWide = width >= 980;
+
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -171,28 +172,43 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
       return const Center(child: Text('No workers available'));
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 16 : 24,
-        vertical: 8,
-      ),
-      itemCount: _workers.length,
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: WorkerCard(
-            worker: _workers[index],
-            onTap: () => _navigateToWorkerDetail(
-              context,
-              _workers[index],
+    return ResponsiveContent(
+      maxWidth: 1160,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: isWide
+          ? GridView.builder(
+              itemCount: _workers.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1.55,
+              ),
+              itemBuilder: (context, index) {
+                return WorkerCard(
+                  worker: _workers[index],
+                  onTap: () =>
+                      _navigateToWorkerDetail(context, _workers[index]),
+                );
+              },
+            )
+          : ListView.builder(
+              itemCount: _workers.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: WorkerCard(
+                    worker: _workers[index],
+                    onTap: () =>
+                        _navigateToWorkerDetail(context, _workers[index]),
+                  ),
+                );
+              },
             ),
-          ),
-        );
-      },
     );
   }
 
-  PreferredSize _buildAppBar(bool isMobile) {
+  PreferredSize _buildAppBar() {
     return PreferredSize(
       preferredSize: const Size.fromHeight(56),
       child: AppBar(
@@ -229,7 +245,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
     );
   }
 
-  Widget _buildSortChip(String label, String value, bool isMobile) {
+  Widget _buildSortChip(String label, String value) {
     final isSelected = _selectedSort == value;
     return GestureDetector(
       onTap: () {
@@ -268,12 +284,13 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(1, 0),
-              end: Offset.zero,
-            ).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic),
-            ),
+            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+                .animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeInOutCubic,
+                  ),
+                ),
             child: child,
           );
         },
@@ -287,56 +304,67 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Filters', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 18)),
-                  const SizedBox(height: 16),
-                  Text('Minimum Rating: ${tempRating.toStringAsFixed(1)}'),
-                  Slider(
-                    value: tempRating,
-                    min: 0,
-                    max: 5,
-                    divisions: 10,
-                    onChanged: (value) {
-                      setModalState(() => tempRating = value);
-                    },
-                  ),
-                  Text('Price Range: ₹${tempRange.start.round()} - ₹${tempRange.end.round()}'),
-                  RangeSlider(
-                    values: tempRange,
-                    min: 100,
-                    max: 1000,
-                    divisions: 18,
-                    onChanged: (value) {
-                      setModalState(() => tempRange = value);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _minRating = tempRating;
-                          _priceRange = tempRange;
-                        });
-                        Navigator.pop(context);
-                        _fetchWorkers();
-                      },
-                      child: const Text('Apply Filters'),
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Filters',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    Text('Minimum Rating: ${tempRating.toStringAsFixed(1)}'),
+                    Slider(
+                      value: tempRating,
+                      min: 0,
+                      max: 5,
+                      divisions: 10,
+                      onChanged: (value) {
+                        setModalState(() => tempRating = value);
+                      },
+                    ),
+                    Text(
+                      'Price Range: ₹${tempRange.start.round()} - ₹${tempRange.end.round()}',
+                    ),
+                    RangeSlider(
+                      values: tempRange,
+                      min: 100,
+                      max: 1000,
+                      divisions: 18,
+                      onChanged: (value) {
+                        setModalState(() => tempRange = value);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            _minRating = tempRating;
+                            _priceRange = tempRange;
+                          });
+                          Navigator.pop(context);
+                          _fetchWorkers();
+                        },
+                        child: const Text('Apply Filters'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },

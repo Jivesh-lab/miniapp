@@ -5,14 +5,13 @@ import '../../core/models/worker_model.dart';
 import '../../core/utils/error_message_helper.dart';
 import '../../core/services/user_service.dart';
 import '../../core/services/worker_service.dart';
+import '../../core/widgets/responsive_layout.dart';
 
 class WorkerDetailScreen extends StatefulWidget {
   final String workerId;
 
-  const WorkerDetailScreen({
-    Key? key,
-    required this.workerId,
-  }) : super(key: key);
+  const WorkerDetailScreen({Key? key, required this.workerId})
+    : super(key: key);
 
   @override
   State<WorkerDetailScreen> createState() => _WorkerDetailScreenState();
@@ -48,7 +47,10 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      ErrorMessageHelper.showSnackBar(context, ErrorMessageHelper.workerList(e));
+      ErrorMessageHelper.showSnackBar(
+        context,
+        ErrorMessageHelper.workerList(e),
+      );
       setState(() {
         _errorMessage = ErrorMessageHelper.workerList(e);
         _isLoading = false;
@@ -59,8 +61,8 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final isMobile = size.width < 600;
-    final padding = isMobile ? 16.0 : 24.0;
+    final isMobile = AppBreakpoints.isMobile(size.width);
+    final padding = AppBreakpoints.horizontalPadding(size.width);
 
     return WillPopScope(
       onWillPop: () async {
@@ -73,66 +75,64 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _errorMessage != null
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(color: Colors.red.shade600),
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: _fetchWorker,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            : Stack(
+                children: [
+                  SingleChildScrollView(
+                    child: ResponsiveContent(
+                      maxWidth: 1000,
+                      padding: EdgeInsets.fromLTRB(padding, 0, padding, 100),
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            _errorMessage!,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(color: Colors.red.shade600),
-                          ),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed: _fetchWorker,
-                            child: const Text('Retry'),
-                          ),
+                          const SizedBox(height: 16),
+                          // Profile Section
+                          _buildProfileSection(isMobile),
+                          const SizedBox(height: 24),
+
+                          // Info Cards
+                          _buildInfoCards(isMobile, padding),
+                          const SizedBox(height: 24),
+
+                          // Skills Section
+                          _buildSkillsSection(isMobile, padding),
+                          const SizedBox(height: 24),
+
+                          // Reviews Section
+                          _buildReviewsSection(isMobile, padding),
+                          const SizedBox(height: 24),
                         ],
                       ),
                     ),
-                  )
-                : Stack(
-          children: [
-            SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                padding,
-                0,
-                padding,
-                100,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  // Profile Section
-                  _buildProfileSection(isMobile),
-                  const SizedBox(height: 24),
-
-                  // Info Cards
-                  _buildInfoCards(isMobile, padding),
-                  const SizedBox(height: 24),
-
-                  // Skills Section
-                  _buildSkillsSection(isMobile, padding),
-                  const SizedBox(height: 24),
-
-                  // Reviews Section
-                  _buildReviewsSection(isMobile, padding),
-                  const SizedBox(height: 24),
+                  ),
+                  // Sticky Book Now Button
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: _buildBookingButton(isMobile, padding),
+                  ),
                 ],
               ),
-            ),
-            // Sticky Book Now Button
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: _buildBookingButton(isMobile, padding),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -338,96 +338,108 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
   }
 
   Widget _buildInfoCards(bool isMobile, double padding) {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.location_on,
-                    color: AppColors.primary,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Distance',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${worker.distance} km',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1F2937),
-                  ),
-                ),
-              ],
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stackVertically = constraints.maxWidth < 540;
+
+        final distanceCard = Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.currency_rupee,
-                    color: AppColors.secondary,
-                    size: 20,
-                  ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Per Hour',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
+                child: const Icon(
+                  Icons.location_on,
+                  color: AppColors.primary,
+                  size: 20,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '₹${worker.pricePerHour}',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1F2937),
-                  ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Distance',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${worker.distance} km',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1F2937),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        );
+
+        final priceCard = Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.currency_rupee,
+                  color: AppColors.secondary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Per Hour',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '₹${worker.pricePerHour}',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1F2937),
+                ),
+              ),
+            ],
+          ),
+        );
+
+        if (stackVertically) {
+          return Column(
+            children: [distanceCard, const SizedBox(height: 12), priceCard],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: distanceCard),
+            const SizedBox(width: 12),
+            Expanded(child: priceCard),
+          ],
+        );
+      },
     );
   }
 
@@ -581,64 +593,67 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
           ),
         ],
       ),
-      padding: EdgeInsets.all(padding).copyWith(
-        top: 12,
-        bottom: 12,
-      ),
+      padding: EdgeInsets.all(padding).copyWith(top: 12, bottom: 12),
       child: SafeArea(
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF2563EB).withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
+        child: Align(
+          alignment: Alignment.center,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
             child: Material(
               color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  Navigator.pushNamed(
-                    context,
-                    '/booking',
-                    arguments: worker,
-                  );
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 16,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.check_circle_outline,
-                        color: Colors.white,
-                        size: 20,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF2563EB).withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/booking',
+                        arguments: worker,
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 16,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Book Now',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                          letterSpacing: 0.5,
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.check_circle_outline,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Book Now',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -682,20 +697,14 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              _buildConfirmationItem(
-                'Service Provider',
-                worker.name,
-              ),
+              _buildConfirmationItem('Service Provider', worker.name),
               const SizedBox(height: 12),
               _buildConfirmationItem(
                 'Service Price',
                 '₹${worker.pricePerHour}',
               ),
               const SizedBox(height: 12),
-              _buildConfirmationItem(
-                'Rating',
-                '${worker.rating} ⭐',
-              ),
+              _buildConfirmationItem('Rating', '${worker.rating} ⭐'),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -706,9 +715,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                       SnackBar(
                         content: Text(
                           'Booking request sent to ${worker.name}!',
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w500,
-                          ),
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
                         ),
                         backgroundColor: Colors.green,
                         behavior: SnackBarBehavior.floating,
@@ -747,10 +754,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: Colors.grey.shade600,
-          ),
+          style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade600),
         ),
         Text(
           value,
