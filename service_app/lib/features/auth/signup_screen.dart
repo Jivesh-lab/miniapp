@@ -17,10 +17,13 @@ class _SignupScreenState extends State<SignupScreen> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   String? _role;
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+  bool _acceptedTerms = false;
   bool _didReadRouteArgs = false;
 
   static final RegExp _phonePattern = RegExp(r'^[0-9]{10,15}$');
@@ -48,11 +51,42 @@ class _SignupScreenState extends State<SignupScreen> {
     _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  int _passwordScore(String value) {
+    var score = 0;
+    if (value.length >= 6) score++;
+    if (RegExp(r'[A-Z]').hasMatch(value)) score++;
+    if (RegExp(r'[0-9]').hasMatch(value)) score++;
+    if (RegExp(r'[^A-Za-z0-9]').hasMatch(value)) score++;
+    return score;
+  }
+
+  String _passwordLabel(String value) {
+    final score = _passwordScore(value);
+    if (score <= 1) return 'Weak';
+    if (score == 2) return 'Okay';
+    if (score == 3) return 'Strong';
+    return 'Very strong';
+  }
+
+  Color _passwordColor(String value) {
+    final score = _passwordScore(value);
+    if (score <= 1) return const Color(0xFFDC2626);
+    if (score == 2) return const Color(0xFFEA580C);
+    if (score == 3) return const Color(0xFF0E7490);
+    return const Color(0xFF15803D);
   }
 
   Future<void> _registerUser() async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (!_acceptedTerms) {
+      ErrorMessageHelper.showSnackBar(context, 'Please accept terms to continue');
       return;
     }
 
@@ -85,6 +119,11 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _registerWorker() async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (!_acceptedTerms) {
+      ErrorMessageHelper.showSnackBar(context, 'Please accept terms to continue');
       return;
     }
 
@@ -141,7 +180,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     children: [
                       Text(
                         'Create your account',
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.spaceGrotesk(
                           fontSize: 24,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF111827),
@@ -150,7 +189,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: 8),
                       Text(
                         'Pick the account type you want to create. Worker signup stays minimal and profile completion happens after login.',
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.manrope(
                           fontSize: 13,
                           color: Colors.grey.shade700,
                         ),
@@ -210,7 +249,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       children: [
                         Text(
                           title,
-                          style: GoogleFonts.inter(
+                          style: GoogleFonts.spaceGrotesk(
                             fontSize: 24,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF111827),
@@ -219,7 +258,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(height: 8),
                         Text(
                           subtitle,
-                          style: GoogleFonts.inter(
+                          style: GoogleFonts.manrope(
                             fontSize: 13,
                             color: Colors.grey.shade700,
                           ),
@@ -286,6 +325,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
+                          onChanged: (_) => setState(() {}),
                           decoration: InputDecoration(
                             labelText: 'Password',
                             prefixIcon: const Icon(Icons.lock_outline),
@@ -310,6 +350,76 @@ class _SignupScreenState extends State<SignupScreen> {
                             }
                             return null;
                           },
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          height: 8,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(999),
+                            color: Colors.grey.shade200,
+                          ),
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: (_passwordScore(_passwordController.text) / 4).clamp(0, 1),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(999),
+                                color: _passwordColor(_passwordController.text),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Password strength: ${_passwordLabel(_passwordController.text)}',
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            color: _passwordColor(_passwordController.text),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          obscureText: _obscureConfirmPassword,
+                          decoration: InputDecoration(
+                            labelText: 'Confirm password',
+                            prefixIcon: const Icon(Icons.lock_person_outlined),
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _obscureConfirmPassword = !_obscureConfirmPassword;
+                                });
+                              },
+                              icon: Icon(
+                                _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                              ),
+                            ),
+                          ),
+                          validator: (value) {
+                            if ((value ?? '').isEmpty) {
+                              return 'Please confirm your password';
+                            }
+                            if (value != _passwordController.text) {
+                              return 'Passwords do not match';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        CheckboxListTile(
+                          value: _acceptedTerms,
+                          onChanged: _isLoading
+                              ? null
+                              : (value) {
+                                  setState(() => _acceptedTerms = value == true);
+                                },
+                          controlAffinity: ListTileControlAffinity.leading,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            'I agree to terms and privacy policy',
+                            style: GoogleFonts.manrope(fontSize: 13),
+                          ),
                         ),
                         const SizedBox(height: 20),
                         SizedBox(

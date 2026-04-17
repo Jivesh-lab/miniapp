@@ -181,8 +181,43 @@ class ApiService {
     });
 
     final parsed = parseResponse(response);
+
+    if (parsed['otpRequired'] == true) {
+      return parsed;
+    }
+
     final data = (parsed['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
     final responseRole = (parsed['role'] ?? data['role'] ?? normalizedRole).toString().toLowerCase();
+    final token = (parsed['token'] ?? data['token'] ?? '').toString();
+    final id = (parsed['id'] ?? data['id'] ?? data['_id'] ?? '').toString();
+
+    if (responseRole == 'worker') {
+      await clearUserSession();
+      if (token.isNotEmpty && id.isNotEmpty) {
+        await saveWorkerSession(token: token, workerId: id);
+      }
+    } else if (responseRole == 'user') {
+      await clearWorkerSession();
+      if (token.isNotEmpty && id.isNotEmpty) {
+        await saveUserSession(token: token, userId: id);
+      }
+    }
+
+    return parsed;
+  }
+
+  static Future<Map<String, dynamic>> verifyLoginOtp({
+    required String tempToken,
+    required String otp,
+  }) async {
+    final response = await postJson('/auth/verify-login-otp', {
+      'tempToken': tempToken,
+      'otp': otp.trim(),
+    });
+
+    final parsed = parseResponse(response);
+    final data = (parsed['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
+    final responseRole = (parsed['role'] ?? data['role'] ?? '').toString().toLowerCase();
     final token = (parsed['token'] ?? data['token'] ?? '').toString();
     final id = (parsed['id'] ?? data['id'] ?? data['_id'] ?? '').toString();
 

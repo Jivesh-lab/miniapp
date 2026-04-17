@@ -37,11 +37,11 @@ class LocalServicesApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2563EB),
+          seedColor: const Color(0xFF0F766E),
           brightness: Brightness.light,
         ),
 
-        textTheme: GoogleFonts.interTextTheme(
+        textTheme: GoogleFonts.manropeTextTheme(
           ThemeData.light().textTheme,
         ),
 
@@ -51,9 +51,9 @@ class LocalServicesApp extends StatelessWidget {
           backgroundColor: Colors.white,
           elevation: 0,
           centerTitle: false,
-          titleTextStyle: GoogleFonts.inter(
+          titleTextStyle: GoogleFonts.spaceGrotesk(
             fontSize: 18,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
             color: const Color(0xFF1F2937),
           ),
           iconTheme: const IconThemeData(color: Color(0xFF1F2937)),
@@ -77,6 +77,10 @@ class LocalServicesApp extends StatelessWidget {
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 12,
+          ),
+          labelStyle: GoogleFonts.manrope(
+            color: const Color(0xFF334155),
+            fontWeight: FontWeight.w500,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -102,7 +106,7 @@ class LocalServicesApp extends StatelessWidget {
         bottomNavigationBarTheme: BottomNavigationBarThemeData(
           backgroundColor: Colors.white,
           elevation: 8,
-          selectedItemColor: const Color(0xFF2563EB),
+          selectedItemColor: const Color(0xFF0F766E),
           unselectedItemColor: Colors.grey.shade400,
           type: BottomNavigationBarType.fixed,
         ),
