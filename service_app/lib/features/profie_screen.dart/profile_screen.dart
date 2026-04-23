@@ -5,7 +5,9 @@ import '../../core/services/api_service.dart';
 import '../../core/services/user_service.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  final VoidCallback? onBack;
+  final VoidCallback? onNavigateToBookings;
+  const ProfileScreen({Key? key, this.onBack, this.onNavigateToBookings}) : super(key: key);
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -119,7 +121,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: 'My Bookings',
               subtitle: 'View all your service bookings',
               onTap: () {
-                Navigator.pushNamed(context, '/my-bookings');
+                if (widget.onNavigateToBookings != null) {
+                  widget.onNavigateToBookings!();
+                } else {
+                  Navigator.pushNamed(context, '/my-bookings');
+                }
               },
             ),
             const SizedBox(height: 12),
@@ -191,6 +197,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary),
           onPressed: () {
+            if (widget.onBack != null) {
+              widget.onBack!();
+              return;
+            }
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
               return;

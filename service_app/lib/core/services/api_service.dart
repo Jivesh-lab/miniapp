@@ -190,6 +190,9 @@ class ApiService {
     final responseRole = (parsed['role'] ?? data['role'] ?? normalizedRole).toString().toLowerCase();
     final token = (parsed['token'] ?? data['token'] ?? '').toString();
     final id = (parsed['id'] ?? data['id'] ?? data['_id'] ?? '').toString();
+    final name = (parsed['name'] ?? data['name'] ?? '').toString();
+    final email = (parsed['email'] ?? data['email'] ?? '').toString();
+    final phone = (parsed['phone'] ?? data['phone'] ?? '').toString();
 
     if (responseRole == 'worker') {
       await clearUserSession();
@@ -200,6 +203,11 @@ class ApiService {
       await clearWorkerSession();
       if (token.isNotEmpty && id.isNotEmpty) {
         await saveUserSession(token: token, userId: id);
+        // Save user name and other data locally
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('user_name', name);
+        await prefs.setString('user_email', email);
+        await prefs.setString('user_phone', phone);
       }
     }
 

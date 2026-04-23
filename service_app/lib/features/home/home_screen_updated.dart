@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:geolocator/geolocator.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/api_exception.dart';
-import '../../core/services/location_api_service.dart';
 import '../../core/services/service_service.dart';
 import '../../core/widgets/category_card.dart';
 import '../../core/widgets/responsive_layout.dart';
 import '../../core/widgets/search_bar_widget.dart';
 import '../worker/worker_list_screen.dart';
-import '../my_bookings/my_bookings_screen.dart';
-import '../profie_screen.dart/profile_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -27,77 +23,13 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _serviceError;
   List<ServiceItem> _services = [];
   String? _userName;
-  String _userLocation = 'Fetching location...';
+  String? _userLocation = 'Your Location';
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
     _fetchServices();
-    _fetchLocation();
-  }
-
-  // ─── LOCATION LOGIC (FIX #1) ───────────────────────────────────────
-  Future<void> _fetchLocation() async {
-    try {
-      // Step 1: Check if location services are enabled
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-
-      if (!serviceEnabled) {
-        if (!mounted) return;
-        setState(() => _userLocation = 'Location OFF');
-        return;
-      }
-
-      // Step 2: Check permission
-      LocationPermission permission = await Geolocator.checkPermission();
-
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          if (!mounted) return;
-          setState(() => _userLocation = 'Permission denied');
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        if (!mounted) return;
-        setState(() => _userLocation = 'Permission denied');
-        return;
-      }
-
-      // Step 3: Get current position
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 15),
-      );
-
-      // Step 4: Handle emulator case (0.0, 0.0)
-      if (position.latitude.abs() < 0.000001 &&
-          position.longitude.abs() < 0.000001) {
-        if (!mounted) return;
-        setState(() => _userLocation = 'Set emulator location');
-        return;
-      }
-
-      // Step 5: Ask backend for city name
-      final city = await LocationApiService.getCityName(
-        position.latitude,
-        position.longitude,
-      );
-
-      if (!mounted) return;
-
-      if (city != 'Unknown' && city.trim().isNotEmpty) {
-        setState(() => _userLocation = '📍 $city');
-      } else {
-        setState(() => _userLocation = 'Location not found');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _userLocation = 'Location not found');
-    }
   }
 
   Future<void> _loadUserData() async {
@@ -139,100 +71,73 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ─── BUILD (FIX #2: IndexedStack for bottom nav) ──────────────────
   @override
   Widget build(BuildContext context) {
-    // For Home tab: use Scaffold with our AppBar + home body
-    // For Bookings/Profile: those screens have their own Scaffold+AppBar
-    // We wrap them all in a Scaffold that only has the bottom nav
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: IndexedStack(
-        index: _selectedNavIndex,
-        children: [
-          // Tab 0: Home — needs its own Scaffold+AppBar
-          Scaffold(
-            backgroundColor: AppColors.background,
-            appBar: _buildAppBar(),
-            body: _buildHomeBody(),
-          ),
-          // Tab 1: Bookings — has its own Scaffold+AppBar
-          MyBookingsScreen(
-            onBack: () => setState(() => _selectedNavIndex = 0),
-          ),
-          // Tab 2: Profile — has its own Scaffold+AppBar
-          ProfileScreen(
-            onBack: () => setState(() => _selectedNavIndex = 0),
-            onNavigateToBookings: () => setState(() => _selectedNavIndex = 1),
-          ),
-        ],
+      appBar: _buildAppBar(),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final isMobile = AppBreakpoints.isMobile(width);
+
+          return SingleChildScrollView(
+            child: ResponsiveContent(
+              maxWidth: 1160,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  
+                  // 🎯 USER GREETING SECTION (NEW)
+                  _buildGreetingSection(),
+                  
+                  const SizedBox(height: 28),
+                  
+                  // Search Bar
+                  SearchBarWidget(onChanged: (value) {}),
+                  const SizedBox(height: 20),
+                  
+                  // Services Title
+                  Text(
+                    'Popular Services',
+                    style: GoogleFonts.inter(
+                      fontSize: isMobile ? 20 : 24,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Services Grid
+                  _buildServicesGrid(width),
+                  const SizedBox(height: 28),
+                  
+                  // Why Choose Us Section
+                  Text(
+                    'Why Choose Us?',
+                    style: GoogleFonts.inter(
+                      fontSize: isMobile ? 20 : 24,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Features Grid
+                  _buildFeatureGrid(width),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
+          );
+        },
       ),
       bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
-  /// Home tab body (the original home content)
-  Widget _buildHomeBody() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final isMobile = AppBreakpoints.isMobile(width);
-
-        return SingleChildScrollView(
-          child: ResponsiveContent(
-            maxWidth: 1160,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
-                
-                // 🎯 USER GREETING SECTION
-                _buildGreetingSection(),
-                
-                const SizedBox(height: 28),
-                
-                // Search Bar
-                SearchBarWidget(onChanged: (value) {}),
-                const SizedBox(height: 20),
-                
-                // Services Title
-                Text(
-                  'Popular Services',
-                  style: GoogleFonts.inter(
-                    fontSize: isMobile ? 20 : 24,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1F2937),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                
-                // Services Grid
-                _buildServicesGrid(width),
-                const SizedBox(height: 28),
-                
-                // Why Choose Us Section
-                Text(
-                  'Why Choose Us?',
-                  style: GoogleFonts.inter(
-                    fontSize: isMobile ? 20 : 24,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF1F2937),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                
-                // Features Grid
-                _buildFeatureGrid(width),
-                const SizedBox(height: 32),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// 🎯 Greeting section with user name and location
+  /// 🎯 NEW: Greeting section with user name and location
   Widget _buildGreetingSection() {
     final greeting = _getTimeBasedGreeting();
     
@@ -312,15 +217,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  _userLocation,
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: const Color(0xFF475569),
-                  ),
-                  overflow: TextOverflow.ellipsis,
+              Text(
+                _userLocation ?? 'Your Location',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF475569),
                 ),
               ),
             ],
@@ -465,7 +367,7 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
         title: Text(
-          _userLocation,
+          _userLocation ?? 'Kalamboli',
           style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -475,7 +377,9 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           GestureDetector(
             onTap: () {
-              setState(() => _selectedNavIndex = 2);
+              _selectedNavIndex = 2;
+              setState(() {});
+              Navigator.pushNamed(context, '/profile');
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -542,6 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   description,
                   style: GoogleFonts.inter(
                     fontSize: 12,
+                    fontWeight: FontWeight.w400,
                     color: Colors.grey.shade600,
                   ),
                 ),
@@ -553,62 +458,42 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─── BOTTOM NAV (FIX #2) ──────────────────────────────────────────
-  Widget _buildBottomNavBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: BottomNavigationBar(
-        currentIndex: _selectedNavIndex,
-        onTap: (index) {
-          setState(() => _selectedNavIndex = index);
-          // NO Navigator.push — just switch index
-        },
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(
-              _selectedNavIndex == 0 ? Icons.home : Icons.home_outlined,
-            ),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              _selectedNavIndex == 1
-                  ? Icons.calendar_today
-                  : Icons.calendar_today_outlined,
-            ),
-            label: 'Bookings',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              _selectedNavIndex == 2 ? Icons.person : Icons.person_outline,
-            ),
-            label: 'Profile',
-          ),
-        ],
+  void _navigateToWorkerList(BuildContext context, String serviceId, String serviceName) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WorkerListScreen(
+          serviceId: serviceId,
+          serviceName: serviceName,
+        ),
       ),
     );
   }
 
-  void _navigateToWorkerList(
-    BuildContext context,
-    String serviceId,
-    String serviceName,
-  ) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) =>
-            WorkerListScreen(serviceId: serviceId, serviceName: serviceName),
-      ),
+  Widget _buildBottomNavBar() {
+    return BottomNavigationBar(
+      currentIndex: _selectedNavIndex,
+      onTap: (index) {
+        setState(() {
+          _selectedNavIndex = index;
+        });
+
+        switch (index) {
+          case 0:
+            break;
+          case 1:
+            Navigator.pushNamed(context, '/my-bookings');
+            break;
+          case 2:
+            Navigator.pushNamed(context, '/profile');
+            break;
+        }
+      },
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Bookings'),
+        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+      ],
     );
   }
 }

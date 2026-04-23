@@ -9,7 +9,8 @@ import '../../core/widgets/booking_card.dart';
 import '../../core/widgets/responsive_layout.dart';
 
 class MyBookingsScreen extends StatefulWidget {
-  const MyBookingsScreen({Key? key}) : super(key: key);
+  final VoidCallback? onBack;
+  const MyBookingsScreen({Key? key, this.onBack}) : super(key: key);
 
   @override
   State<MyBookingsScreen> createState() => _MyBookingsScreenState();
@@ -400,6 +401,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary),
           onPressed: () {
+            if (widget.onBack != null) {
+              widget.onBack!();
+              return;
+            }
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
               return;

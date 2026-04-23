@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'core/models/worker_model.dart';
 import 'core/navigation/app_navigator.dart';
 
+import 'features/splash_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/auth/loginscreen.dart';
 import 'features/auth/signup_screen.dart';
@@ -112,7 +113,7 @@ class LocalServicesApp extends StatelessWidget {
         ),
       ),
 
-      initialRoute: '/login',
+      home: const SplashScreen(),
 
       routes: {
         '/': (context) => const LoginScreen(),
