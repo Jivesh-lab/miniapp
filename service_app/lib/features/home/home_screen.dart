@@ -6,6 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/services/api_exception.dart';
 import '../../core/services/location_api_service.dart';
 import '../../core/services/service_service.dart';
+import '../../core/utils/error_message_helper.dart';
 import '../../core/widgets/category_card.dart';
 import '../../core/widgets/responsive_layout.dart';
 import '../../core/widgets/search_bar_widget.dart';
@@ -129,6 +130,15 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
 
       if (e is ApiException && e.statusCode == 401) {
+        setState(() {
+          _isLoadingServices = false;
+          _serviceError = 'Session expired. Tap retry or login again.';
+        });
+        await ErrorMessageHelper.showSessionExpiredDialog(
+          context,
+          message: ErrorMessageHelper.auth(e),
+          loginRoute: '/login',
+        );
         return;
       }
 

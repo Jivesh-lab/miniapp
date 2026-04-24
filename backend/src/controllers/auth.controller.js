@@ -1,7 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
-import Blacklist from "../models/blacklist.model.js";
 import User from "../models/user.model.js";
 import Worker from "../models/worker.model.js";
 import { isStrongEnoughPassword, isValidEmail, isValidPhone } from "../utils/validators.js";
@@ -17,7 +16,7 @@ const isEmailIdentifier = (identifier) => String(identifier).includes("@");
 
 const signToken = (id, role) => {
   try {
-    return jwt.sign({ id, role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    return jwt.sign({ userId: id, role }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
   } catch (error) {
     throw new Error(`Failed to generate token: ${error.message}`);
   }
@@ -312,6 +311,13 @@ export const login = async (req, res) => {
   }
 };
 
+export const verifyLoginOtp = async (_req, res) => {
+  return res.status(501).json({
+    success: false,
+    message: "Login OTP verification is not implemented",
+  });
+};
+
 export const logout = async (req, res) => {
   try {
     const authHeader = req.headers.authorization || "";
@@ -320,14 +326,6 @@ export const logout = async (req, res) => {
     if (!token) {
       return res.status(401).json({ message: "No token, unauthorized" });
     }
-
-    const expiresAt = req.user?.exp ? new Date(Number(req.user.exp) * 1000) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-    await Blacklist.findOneAndUpdate(
-      { token },
-      { token, expiresAt },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
 
     return res.status(200).json({
       success: true,

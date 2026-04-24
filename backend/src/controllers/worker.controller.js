@@ -6,6 +6,7 @@ import {
   sendWorkerNotFound,
   sendWorkerValidationError,
 } from "../utils/worker-error.util.js";
+import { calculateDistance, formatDistance, isValidCoordinates } from "../utils/distance.util.js";
 
 const DEFAULT_ALL_SLOTS = ["10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
 
@@ -125,9 +126,48 @@ const buildGlobalSortQuery = ({ sort, order }) => {
   return { [field]: direction };
 };
 
+/**
+ * Add distance information to workers if user location is provided
+ * Sorts by distance if sortByDistance is true
+ */
+const enrichWorkersWithDistance = (workers, userLatitude, userLongitude, sortByDistance = false) => {
+  const enriched = workers.map((worker) => {
+    let distance = null;
+    let distanceFormatted = null;
+
+    if (
+      userLatitude !== undefined &&
+      userLongitude !== undefined &&
+      isValidCoordinates(userLatitude, userLongitude) &&
+      worker.latitude !== null &&
+      worker.longitude !== null &&
+      isValidCoordinates(worker.latitude, worker.longitude)
+    ) {
+      distance = calculateDistance(userLatitude, userLongitude, worker.latitude, worker.longitude);
+      distanceFormatted = formatDistance(distance);
+    }
+
+    return {
+      ...worker,
+      distance: distance,
+      distanceFormatted: distanceFormatted,
+    };
+  });
+
+  if (sortByDistance) {
+    enriched.sort((a, b) => {
+      if (a.distance === null) return 1;
+      if (b.distance === null) return -1;
+      return a.distance - b.distance;
+    });
+  }
+
+  return enriched;
+};
+
 export const getAllWorkers = async (req, res) => {
   try {
-    const { q, sort, order, serviceId } = req.query;
+    const { q, sort, order, serviceId, userLatitude, userLongitude } = req.query;
 
     const pageParsed = parseOptionalPositiveInt(req.query.page, 1);
     const limitParsed = parseOptionalPositiveInt(req.query.limit, 10, 50);
@@ -144,8 +184,10 @@ export const getAllWorkers = async (req, res) => {
     const minRatingParsed = parseOptionalNumber(req.query.rating ?? req.query.minRating);
     const minPriceParsed = parseOptionalNumber(req.query.minPrice);
     const maxPriceParsed = parseOptionalNumber(req.query.maxPrice);
+    const userLatParsed = parseOptionalNumber(userLatitude);
+    const userLngParsed = parseOptionalNumber(userLongitude);
 
-    const parseError = [minRatingParsed, minPriceParsed, maxPriceParsed].find(
+    const parseError = [minRatingParsed, minPriceParsed, maxPriceParsed, userLatParsed, userLngParsed].find(
       (item) => item?.error
     );
 
@@ -207,13 +249,18 @@ export const getAllWorkers = async (req, res) => {
       Worker.countDocuments(workerQuery),
     ]);
 
+    const userLat = userLatParsed.value;
+    const userLng = userLngParsed.value;
+    const hasUserLocation = userLat !== undefined && userLng !== undefined;
+    const enrichedWorkers = enrichWorkersWithDistance(workers, userLat, userLng, sort === "nearest" || !sort);
+
     return res.status(200).json({
       success: true,
-      count: workers.length,
+      count: enrichedWorkers.length,
       total,
       page,
       pages: Math.ceil(total / limit),
-      data: workers,
+      data: enrichedWorkers,
     });
   } catch (err) {
     return handleWorkerException(res, err, "Failed to fetch workers");
@@ -223,22 +270,35 @@ export const getAllWorkers = async (req, res) => {
 export const getWorkers = async (req, res) => {
   try {
     const { serviceId } = req.params;
+    const { userLatitude, userLongitude } = req.query;
     const { page, limit, skip } = parsePagination(req.query);
     const workerQuery = buildWorkerQuery({ serviceId, query: req.query });
     const sortQuery = buildSortQuery(req.query.sort);
+
+    const userLatParsed = parseOptionalNumber(userLatitude);
+    const userLngParsed = parseOptionalNumber(userLongitude);
+
+    const parseError = [userLatParsed, userLngParsed].find((item) => item?.error);
+    if (parseError) {
+      return sendWorkerValidationError(res, parseError.error);
+    }
 
     const [workers, total] = await Promise.all([
       Worker.find(workerQuery).sort(sortQuery).skip(skip).limit(limit).lean(),
       Worker.countDocuments(workerQuery),
     ]);
 
+    const userLat = userLatParsed.value;
+    const userLng = userLngParsed.value;
+    const enrichedWorkers = enrichWorkersWithDistance(workers, userLat, userLng, req.query.sort === "nearest");
+
     return res.status(200).json({
       success: true,
-      count: workers.length,
+      count: enrichedWorkers.length,
       total,
       page,
       totalPages: Math.ceil(total / limit),
-      data: workers,
+      data: enrichedWorkers,
     });
   } catch (err) {
     return handleWorkerException(res, err, "Failed to fetch workers");
@@ -247,22 +307,35 @@ export const getWorkers = async (req, res) => {
 
 export const searchWorkers = async (req, res) => {
   try {
+    const { userLatitude, userLongitude } = req.query;
     const { page, limit, skip } = parsePagination(req.query);
     const workerQuery = buildWorkerQuery({ query: req.query });
     const sortQuery = buildSortQuery(req.query.sort);
+
+    const userLatParsed = parseOptionalNumber(userLatitude);
+    const userLngParsed = parseOptionalNumber(userLongitude);
+
+    const parseError = [userLatParsed, userLngParsed].find((item) => item?.error);
+    if (parseError) {
+      return sendWorkerValidationError(res, parseError.error);
+    }
 
     const [workers, total] = await Promise.all([
       Worker.find(workerQuery).sort(sortQuery).skip(skip).limit(limit).lean(),
       Worker.countDocuments(workerQuery),
     ]);
 
+    const userLat = userLatParsed.value;
+    const userLng = userLngParsed.value;
+    const enrichedWorkers = enrichWorkersWithDistance(workers, userLat, userLng, req.query.sort === "nearest");
+
     return res.status(200).json({
       success: true,
-      count: workers.length,
+      count: enrichedWorkers.length,
       total,
       page,
       totalPages: Math.ceil(total / limit),
-      data: workers,
+      data: enrichedWorkers,
     });
   } catch (err) {
     return handleWorkerException(res, err, "Failed to search workers");

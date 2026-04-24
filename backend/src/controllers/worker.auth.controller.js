@@ -11,6 +11,7 @@ import {
   sendWorkerNotFound,
   sendWorkerValidationError,
 } from "../utils/worker-error.util.js";
+import { isValidCoordinates } from "../utils/distance.util.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_worker_jwt_secret";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
@@ -251,5 +252,52 @@ export const getWorkerDashboardBookings = async (req, res) => {
     });
   } catch (error) {
     return handleWorkerException(res, error, "Failed to fetch worker bookings");
+  }
+};
+
+export const updateWorkerLocation = async (req, res) => {
+  try {
+    const { workerId } = req.worker;
+    const { latitude, longitude, isOnline } = req.body ?? {};
+
+    if (!workerId) {
+      return sendWorkerError(res, 401, "Unauthorized");
+    }
+
+    if (latitude === undefined || longitude === undefined) {
+      return sendWorkerValidationError(res, "latitude and longitude are required");
+    }
+
+    const lat = Number(latitude);
+    const lng = Number(longitude);
+
+    if (!isValidCoordinates(lat, lng)) {
+      return sendWorkerValidationError(res, "Invalid latitude or longitude coordinates");
+    }
+
+    const worker = await Worker.findByIdAndUpdate(
+      workerId,
+      {
+        latitude: lat,
+        longitude: lng,
+        isOnline: typeof isOnline === "boolean" ? isOnline : true,
+        lastLocationUpdate: new Date(),
+      },
+      { new: true, runValidators: true }
+    )
+      .select("name phone latitude longitude isOnline lastLocationUpdate")
+      .lean();
+
+    if (!worker) {
+      return sendWorkerNotFound(res, "Worker not found");
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Location updated successfully",
+      data: worker,
+    });
+  } catch (error) {
+    return handleWorkerException(res, error, "Failed to update worker location");
   }
 };

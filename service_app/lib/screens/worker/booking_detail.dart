@@ -115,6 +115,11 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       }
 
       if (e is ApiException && e.statusCode == 401) {
+        await ErrorMessageHelper.showSessionExpiredDialog(
+          context,
+          message: ErrorMessageHelper.auth(e),
+          loginRoute: '/worker/login',
+        );
         return;
       }
 

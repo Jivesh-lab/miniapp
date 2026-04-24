@@ -5,6 +5,7 @@ import '../../core/services/api_exception.dart';
 import '../../core/models/booking_model.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/booking_service.dart';
+import '../../core/utils/error_message_helper.dart';
 import '../../core/widgets/booking_card.dart';
 import '../../core/widgets/responsive_layout.dart';
 
@@ -78,6 +79,15 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       if (!mounted) return;
 
       if (e is ApiException && e.statusCode == 401) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Session expired. Please login again.';
+        });
+        await ErrorMessageHelper.showSessionExpiredDialog(
+          context,
+          message: ErrorMessageHelper.auth(e),
+          loginRoute: '/login',
+        );
         return;
       }
 
@@ -543,7 +553,12 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
           if (_selectedTabIndex == 0)
             ElevatedButton.icon(
               onPressed: () {
-                // Navigate to home to book service
+                if (widget.onBack != null) {
+                  widget.onBack!();
+                  return;
+                }
+
+                Navigator.pushReplacementNamed(context, '/home');
               },
               icon: const Icon(Icons.add),
               label: Text(

@@ -6,10 +6,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_exception.dart';
-import '../navigation/app_navigator.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:5000/api';
+  static const String baseUrl = 'http://192.168.0.105:3000/api';
   static const Duration requestTimeout = Duration(seconds: 10);
   static const String _userTokenKey = 'user_token';
   static const String _userIdKey = 'user_id';
@@ -147,13 +146,8 @@ class ApiService {
     }
 
     if (response.statusCode == 401) {
-      await clearSession();
-      final navigator = appNavigatorKey.currentState;
-      if (navigator != null) {
-        navigator.pushNamedAndRemoveUntil(loginRoute, (route) => false);
-      }
       throw ApiException(
-        message: body['message']?.toString() ?? 'Token expired, login again',
+        message: body['message']?.toString() ?? 'Session expired or invalid token',
         statusCode: 401,
       );
     }
@@ -195,12 +189,10 @@ class ApiService {
     final phone = (parsed['phone'] ?? data['phone'] ?? '').toString();
 
     if (responseRole == 'worker') {
-      await clearUserSession();
       if (token.isNotEmpty && id.isNotEmpty) {
         await saveWorkerSession(token: token, workerId: id);
       }
     } else if (responseRole == 'user') {
-      await clearWorkerSession();
       if (token.isNotEmpty && id.isNotEmpty) {
         await saveUserSession(token: token, userId: id);
         // Save user name and other data locally
@@ -230,12 +222,10 @@ class ApiService {
     final id = (parsed['id'] ?? data['id'] ?? data['_id'] ?? '').toString();
 
     if (responseRole == 'worker') {
-      await clearUserSession();
       if (token.isNotEmpty && id.isNotEmpty) {
         await saveWorkerSession(token: token, workerId: id);
       }
     } else if (responseRole == 'user') {
-      await clearWorkerSession();
       if (token.isNotEmpty && id.isNotEmpty) {
         await saveUserSession(token: token, userId: id);
       }

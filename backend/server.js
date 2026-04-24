@@ -11,7 +11,6 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 const { default: app } = await import("./src/app.js");
 const { default: connectDB } = await import("./src/config/db.js");
 
-const PORT = process.env.PORT || 5000;
 let server;
 
 process.on("uncaughtException", (error) => {
@@ -35,8 +34,8 @@ const startServer = async () => {
   try {
     await connectDB();
 
-    server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    server = app.listen(3000, "0.0.0.0", () => {
+      console.log("Server running at http://192.168.0.105:3000");
     });
 
     server.on("error", (error) => {

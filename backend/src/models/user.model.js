@@ -46,6 +46,30 @@ const userSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    latitude: {
+      type: Number,
+      default: null,
+      min: -90,
+      max: 90,
+      index: true,
+    },
+    longitude: {
+      type: Number,
+      default: null,
+      min: -180,
+      max: 180,
+      index: true,
+    },
+    address: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+    lastLocationUpdate: {
+      type: Date,
+      default: null,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -54,5 +78,6 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.index({ favoriteWorkers: 1 });
+userSchema.index({ latitude: 1, longitude: 1 });
 
 export default mongoose.model("User", userSchema);

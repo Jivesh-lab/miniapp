@@ -97,6 +97,25 @@ const workerSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    latitude: {
+      type: Number,
+      default: null,
+      index: true,
+    },
+    longitude: {
+      type: Number,
+      default: null,
+      index: true,
+    },
+    isOnline: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    lastLocationUpdate: {
+      type: Date,
+      default: null,
+    },
     role: {
       type: String,
       default: "worker",

@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'home/home_screen.dart';
+import '../core/services/app_api_client.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -55,10 +55,10 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _goNext() async {
     if (!mounted) return;
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-    );
+    final hasSession = await AppApiClient.hasSavedSession();
+    if (!mounted) return;
+
+    Navigator.pushReplacementNamed(context, hasSession ? '/home' : '/login');
   }
 
   @override

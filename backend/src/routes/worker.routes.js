@@ -10,6 +10,7 @@ import {
   getWorkerProfile,
   getWorkerDashboardBookings,
   updateWorkerProfile,
+  updateWorkerLocation,
 } from "../controllers/worker.auth.controller.js";
 import { authMiddleware, authorizeRoles } from "../middleware/auth.middleware.js";
 
@@ -20,6 +21,9 @@ router.get("/profile", authMiddleware, authorizeRoles("worker"), getWorkerProfil
 
 // PUT /api/workers/profile
 router.put("/profile", authMiddleware, authorizeRoles("worker"), updateWorkerProfile);
+
+// POST /api/workers/update-location
+router.post("/update-location", authMiddleware, authorizeRoles("worker"), updateWorkerLocation);
 
 // GET /api/workers/bookings?page=1&limit=10&status=pending
 router.get("/bookings", authMiddleware, authorizeRoles("worker"), getWorkerDashboardBookings);

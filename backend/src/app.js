@@ -5,6 +5,11 @@ import bookingRoutes from "./routes/booking.routes.js";
 import serviceRoutes from "./routes/service.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import geocodingRoutes from "./routes/geocoding.routes.js";
+import locationRoutes from "./routes/location.routes.js";
+import { login, registerUser } from "./controllers/auth.controller.js";
+import { getServices } from "./controllers/service.controller.js";
+import { getUserProfile } from "./controllers/user.controller.js";
 import { authMiddleware, authorizeRoles } from "./middleware/auth.middleware.js";
 import { errorHandler, notFoundHandler } from "./middleware/error.middleware.js";
 
@@ -13,12 +18,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.post("/api/register", registerUser);
+app.post("/api/login", login);
+app.get("/api/services", getServices);
+app.get("/api/profile", authMiddleware, authorizeRoles("user"), getUserProfile);
+
 app.use("/api/worker", workerRoutes);
 app.use("/api/workers", workerRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/users", locationRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/", geocodingRoutes);
 
 app.get("/", authMiddleware, authorizeRoles("user", "worker"), (req, res) => {
   res.status(200).json({

@@ -87,6 +87,36 @@ class ErrorMessageHelper {
     );
   }
 
+  static Future<void> showSessionExpiredDialog(
+    BuildContext context, {
+    String message = 'Session expired or invalid token. Please log in again.',
+    String loginRoute = '/login',
+  }) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Session issue'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Stay'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                Navigator.pushNamedAndRemoveUntil(context, loginRoute, (route) => false);
+              },
+              child: const Text('Login again'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   static String _extract(Object error) {
     if (error is ApiException) {
       return error.message.trim();

@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-import Blacklist from "../models/blacklist.model.js";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_worker_jwt_secret";
 
@@ -22,24 +21,20 @@ export const authMiddleware = async (req, res, next) => {
   }
 
   try {
-    const blacklisted = await Blacklist.findOne({ token }).lean();
-
-    if (blacklisted) {
-      return res.status(401).json({ message: "Token expired, login again" });
-    }
-
     const decoded = jwt.verify(token, JWT_SECRET);
+    const tokenUserId = decoded?.userId ?? decoded?.id;
 
-    if (!decoded?.id || !decoded?.role) {
+    if (!tokenUserId || !decoded?.role) {
       return res.status(401).json({ message: "Invalid token" });
     }
 
-    const normalizedId = String(decoded.id);
+    const normalizedId = String(tokenUserId);
     const normalizedRole = String(decoded.role);
 
     req.user = {
       ...decoded,
       id: normalizedId,
+      userId: normalizedId,
       role: normalizedRole,
     };
 

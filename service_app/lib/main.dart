@@ -3,14 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'core/models/worker_model.dart';
 import 'core/navigation/app_navigator.dart';
-
 import 'features/splash_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/auth/loginscreen.dart';
 import 'features/auth/signup_screen.dart';
 import 'features/worker/worker_list_screen.dart';
 import 'features/worker/worker_detail_screen.dart';
-
 import 'features/booking/booking_screen.dart';
 import 'features/my_bookings/my_bookings_screen.dart';
 import 'features/profie_screen.dart/profile_screen.dart';
@@ -21,102 +19,64 @@ import 'screens/worker/booking_detail.dart';
 import 'screens/worker/worker_profile_completion_screen.dart';
 
 void main() {
-  runApp(const LocalServicesApp());
+  runApp(const ServiceApp());
 }
 
-class LocalServicesApp extends StatelessWidget {
-  const LocalServicesApp({Key? key}) : super(key: key);
+class ServiceApp extends StatelessWidget {
+  const ServiceApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Local Services',
+      title: 'Local Service App',
       debugShowCheckedModeBanner: false,
       navigatorKey: appNavigatorKey,
-
-      // 🎯 THEME
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF0F766E),
           brightness: Brightness.light,
         ),
-
-        textTheme: GoogleFonts.manropeTextTheme(
-          ThemeData.light().textTheme,
-        ),
-
-        scaffoldBackgroundColor: const Color(0xFFF9FAFB),
-
+        scaffoldBackgroundColor: const Color(0xFFF6F7F9),
+        textTheme: GoogleFonts.manropeTextTheme(),
         appBarTheme: AppBarTheme(
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.transparent,
           elevation: 0,
           centerTitle: false,
           titleTextStyle: GoogleFonts.spaceGrotesk(
-            fontSize: 18,
+            fontSize: 22,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFF1F2937),
+            color: const Color(0xFF0F172A),
           ),
-          iconTheme: const IconThemeData(color: Color(0xFF1F2937)),
         ),
-
         cardTheme: CardThemeData(
           color: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: Colors.grey.shade200,
-              width: 1,
-            ),
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: Colors.grey.shade200),
           ),
         ),
-
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 12,
-          ),
-          labelStyle: GoogleFonts.manrope(
-            color: const Color(0xFF334155),
-            fontWeight: FontWeight.w500,
-          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(color: Colors.grey.shade200),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(color: Colors.grey.shade200),
           ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: Color(0xFF2563EB),
-              width: 2,
-            ),
+          focusedBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Color(0xFF0F766E), width: 2),
           ),
-          hintStyle: GoogleFonts.inter(
-            color: Colors.grey.shade500,
-            fontSize: 14,
-          ),
-        ),
-
-        bottomNavigationBarTheme: BottomNavigationBarThemeData(
-          backgroundColor: Colors.white,
-          elevation: 8,
-          selectedItemColor: const Color(0xFF0F766E),
-          unselectedItemColor: Colors.grey.shade400,
-          type: BottomNavigationBarType.fixed,
         ),
       ),
-
       home: const SplashScreen(),
-
       routes: {
-        '/': (context) => const LoginScreen(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/home': (context) => const HomeScreen(),
@@ -128,11 +88,9 @@ class LocalServicesApp extends StatelessWidget {
         '/worker/dashboard': (context) => const WorkerDashboardScreen(),
         '/worker/bookings': (context) => const WorkerBookingsScreen(),
       },
-
       onGenerateRoute: (settings) {
         if (settings.name == '/worker-detail') {
           final workerId = settings.arguments as String;
-
           return MaterialPageRoute(
             builder: (context) => WorkerDetailScreen(workerId: workerId),
           );
@@ -140,7 +98,6 @@ class LocalServicesApp extends StatelessWidget {
 
         if (settings.name == '/booking') {
           final worker = settings.arguments as WorkerModel;
-
           return MaterialPageRoute(
             builder: (context) => BookingScreen(worker: worker),
           );
@@ -148,7 +105,6 @@ class LocalServicesApp extends StatelessWidget {
 
         if (settings.name == '/worker/booking-detail') {
           final args = settings.arguments as WorkerBookingDetailArgs;
-
           return MaterialPageRoute(
             builder: (context) => BookingDetailScreen(
               booking: args.booking,

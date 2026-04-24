@@ -82,6 +82,17 @@ class _WorkerBookingsScreenState extends State<WorkerBookingsScreen> {
       }
 
       if (error.statusCode == 401) {
+        setState(() {
+          _bookings = <WorkerBooking>[];
+          _isLoading = false;
+          _isError = true;
+          _errorMessage = ErrorMessageHelper.auth(error);
+        });
+        await ErrorMessageHelper.showSessionExpiredDialog(
+          context,
+          message: ErrorMessageHelper.auth(error),
+          loginRoute: '/worker/login',
+        );
         return;
       }
 

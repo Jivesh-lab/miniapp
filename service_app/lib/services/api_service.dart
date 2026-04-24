@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/services/api_service.dart' as shared_api;
-import '../core/navigation/app_navigator.dart';
 import '../core/services/api_exception.dart';
 import '../models/booking_model.dart';
 
@@ -35,7 +34,7 @@ class WorkerSession {
 }
 
 class WorkerApiService {
-  static const String _baseUrl = 'http://localhost:5000/api';
+  static const String _baseUrl = 'http://192.168.0.105:3000/api';
   static const String _sessionKey = 'worker_session';
 
   final Duration _cacheTtl = const Duration(seconds: 30);
@@ -76,7 +75,6 @@ class WorkerApiService {
         );
       }
 
-      await shared_api.ApiService.clearUserSession();
       final session = WorkerSession(workerId: workerId, token: token);
       await saveSession(session);
       return session;
@@ -382,13 +380,8 @@ class WorkerApiService {
     }
 
     if (response.statusCode == 401) {
-      await clearSession();
-      final navigator = appNavigatorKey.currentState;
-      if (navigator != null) {
-        navigator.pushNamedAndRemoveUntil(loginRoute, (route) => false);
-      }
       throw ApiException(
-        message: body['message']?.toString() ?? 'Token expired, login again',
+        message: body['message']?.toString() ?? 'Session expired or invalid token',
         statusCode: 401,
       );
     }

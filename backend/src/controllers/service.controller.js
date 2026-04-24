@@ -1,13 +1,21 @@
 import Service from "../models/service.model.js";
 
+const defaultServices = [
+  { _id: "1", name: "Plumber" },
+  { _id: "2", name: "Electrician" },
+  { _id: "3", name: "Cleaner" },
+  { _id: "4", name: "AC Repair" },
+];
+
 export const getServices = async (req, res) => {
   try {
     const services = await Service.find().sort({ name: 1 }).lean();
+    const data = services.length ? services : defaultServices;
 
     return res.status(200).json({
       success: true,
-      count: services.length,
-      data: services,
+      count: data.length,
+      data,
     });
   } catch (error) {
     return res.status(500).json({
