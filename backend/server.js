@@ -10,6 +10,7 @@ dotenv.config({ path: path.join(__dirname, ".env") });
 
 const { default: app } = await import("./src/app.js");
 const { default: connectDB } = await import("./src/config/db.js");
+const { initSocket } = await import("./src/socket.js");
 
 let server;
 
@@ -34,9 +35,12 @@ const startServer = async () => {
   try {
     await connectDB();
 
-    server = app.listen(3000, "0.0.0.0", () => {
-      console.log("Server running at http://192.168.0.105:3000");
+    const port = process.env.PORT || 3000;
+    server = app.listen(port, "0.0.0.0", () => {
+      console.log(`Server running at http://192.168.0.104:${port}`);
     });
+
+    initSocket(server);
 
     server.on("error", (error) => {
       console.error("Server error:", error);

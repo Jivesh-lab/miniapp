@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/services/api_service.dart';
 import '../../core/utils/error_message_helper.dart';
+import '../../core/widgets/app_button.dart';
+import '../../core/widgets/app_text_field.dart';
+import 'otp_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -93,7 +96,7 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await ApiService.registerUser(
+      final response = await ApiService.registerUser(
         name: _nameController.text,
         phone: _phoneController.text,
         email: _emailController.text,
@@ -101,6 +104,19 @@ class _SignupScreenState extends State<SignupScreen> {
       );
 
       if (!mounted) return;
+
+      if (response['requires_otp'] == true) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpScreen(
+              identifier: response['identifier'] ?? _emailController.text,
+              role: response['role'] ?? 'user',
+            ),
+          ),
+        );
+        return;
+      }
 
       ErrorMessageHelper.showSnackBar(
         context,
@@ -130,13 +146,26 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await ApiService.registerWorker(
+      final response = await ApiService.registerWorker(
         name: _nameController.text,
         phone: _phoneController.text,
         password: _passwordController.text,
       );
 
       if (!mounted) return;
+
+      if (response['requires_otp'] == true) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpScreen(
+              identifier: response['identifier'] ?? _phoneController.text,
+              role: response['role'] ?? 'worker',
+            ),
+          ),
+        );
+        return;
+      }
 
       ErrorMessageHelper.showSnackBar(
         context,
@@ -264,12 +293,10 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        TextFormField(
+                        AppTextField(
                           controller: _nameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Name',
-                            prefixIcon: Icon(Icons.person_outline),
-                          ),
+                          labelText: 'Name',
+                          prefixIcon: Icons.person_outline,
                           validator: (value) {
                             final text = value?.trim() ?? '';
                             if (text.isEmpty) {
@@ -282,13 +309,11 @@ class _SignupScreenState extends State<SignupScreen> {
                           },
                         ),
                         const SizedBox(height: 12),
-                        TextFormField(
+                        AppTextField(
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
-                            labelText: 'Phone',
-                            prefixIcon: Icon(Icons.phone_outlined),
-                          ),
+                          labelText: 'Phone',
+                          prefixIcon: Icons.phone_outlined,
                           validator: (value) {
                             final text = value?.trim() ?? '';
                             if (text.isEmpty) {
@@ -302,13 +327,11 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         const SizedBox(height: 12),
                         if (!isWorker) ...[
-                          TextFormField(
+                          AppTextField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
-                              prefixIcon: Icon(Icons.email_outlined),
-                            ),
+                            labelText: 'Email',
+                            prefixIcon: Icons.email_outlined,
                             validator: (value) {
                               final text = value?.trim() ?? '';
                               if (text.isEmpty) {
@@ -322,22 +345,20 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                           const SizedBox(height: 12),
                         ],
-                        TextFormField(
+                        AppTextField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
                           onChanged: (_) => setState(() {}),
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            prefixIcon: const Icon(Icons.lock_outline),
-                            suffixIcon: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
-                              icon: Icon(
-                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                              ),
+                          labelText: 'Password',
+                          prefixIcon: Icons.lock_outline,
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
                             ),
                           ),
                           validator: (value) {
@@ -379,21 +400,19 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                         const SizedBox(height: 12),
-                        TextFormField(
+                        AppTextField(
                           controller: _confirmPasswordController,
                           obscureText: _obscureConfirmPassword,
-                          decoration: InputDecoration(
-                            labelText: 'Confirm password',
-                            prefixIcon: const Icon(Icons.lock_person_outlined),
-                            suffixIcon: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  _obscureConfirmPassword = !_obscureConfirmPassword;
-                                });
-                              },
-                              icon: Icon(
-                                _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                              ),
+                          labelText: 'Confirm password',
+                          prefixIcon: Icons.lock_person_outlined,
+                          suffixIcon: IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _obscureConfirmPassword = !_obscureConfirmPassword;
+                              });
+                            },
+                            icon: Icon(
+                              _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
                             ),
                           ),
                           validator: (value) {
@@ -424,19 +443,14 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(height: 20),
                         SizedBox(
                           height: 48,
-                          child: ElevatedButton(
+                          child: AppButton(
                             onPressed: _isLoading
                                 ? null
                                 : isWorker
                                     ? _registerWorker
                                     : _registerUser,
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : Text(isWorker ? 'Create Worker Account' : 'Create User Account'),
+                            isLoading: _isLoading,
+                            label: isWorker ? 'Create Worker Account' : 'Create User Account',
                           ),
                         ),
                         const SizedBox(height: 8),

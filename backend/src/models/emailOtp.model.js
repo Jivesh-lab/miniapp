@@ -12,7 +12,7 @@ const emailOtpSchema = new mongoose.Schema(
     purpose: {
       type: String,
       required: true,
-      enum: ["login"],
+      enum: ["login", "register"],
       index: true,
     },
     userId: {

@@ -34,7 +34,7 @@ class WorkerSession {
 }
 
 class WorkerApiService {
-  static const String _baseUrl = 'http://192.168.0.105:3000/api';
+  static const String _baseUrl = 'http://192.168.0.104:3000/api';
   static const String _sessionKey = 'worker_session';
 
   final Duration _cacheTtl = const Duration(seconds: 30);

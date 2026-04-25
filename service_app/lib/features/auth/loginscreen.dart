@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/services/api_service.dart';
 import '../../core/utils/error_message_helper.dart';
+import '../../core/widgets/app_button.dart';
+import '../../core/widgets/app_text_field.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -48,11 +50,11 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-        final data = response['data'] is Map<String, dynamic>
+      final data = response['data'] is Map<String, dynamic>
           ? response['data'] as Map<String, dynamic>
           : <String, dynamic>{};
-        final role = (response['role'] ?? data['role'] ?? _selectedRole).toString().toLowerCase();
-        final profileComplete = response['profileComplete'] == true || data['profileComplete'] == true;
+      final role = (response['role'] ?? data['role'] ?? _selectedRole).toString().toLowerCase();
+      final profileComplete = response['profileComplete'] == true || data['profileComplete'] == true;
 
       if (role == 'worker') {
         Navigator.pushReplacementNamed(
@@ -142,12 +144,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           ),
                           const SizedBox(height: 16),
-                          TextFormField(
+                          AppTextField(
                             controller: _identifierController,
-                            decoration: InputDecoration(
-                              labelText: _selectedRole == 'worker' ? 'Phone' : 'Email or Phone',
-                              prefixIcon: const Icon(Icons.person_outline),
-                            ),
+                            labelText: _selectedRole == 'worker' ? 'Phone' : 'Email or Phone',
+                            prefixIcon: Icons.person_outline,
                             validator: (value) {
                               final text = value?.trim() ?? '';
 
@@ -178,21 +178,19 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           ),
                           const SizedBox(height: 12),
-                          TextFormField(
+                          AppTextField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              prefixIcon: const Icon(Icons.lock_outline),
-                              suffixIcon: IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
-                                },
-                                icon: Icon(
-                                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                                ),
+                            labelText: 'Password',
+                            prefixIcon: Icons.lock_outline,
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                              icon: Icon(
+                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
                               ),
                             ),
                             validator: (value) {
@@ -208,15 +206,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 20),
                           SizedBox(
                             height: 48,
-                            child: ElevatedButton(
+                            child: AppButton(
                               onPressed: _isLoading ? null : _login,
-                              child: _isLoading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    )
-                                  : Text('Login as ${_selectedRole == 'worker' ? 'Worker' : 'User'}'),
+                              isLoading: _isLoading,
+                              label: 'Login as ${_selectedRole == 'worker' ? 'Worker' : 'User'}',
                             ),
                           ),
                           const SizedBox(height: 8),

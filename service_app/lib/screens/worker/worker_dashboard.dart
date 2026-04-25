@@ -6,6 +6,7 @@ import '../../models/booking_model.dart';
 import '../../core/utils/error_message_helper.dart';
 import '../../core/widgets/responsive_layout.dart';
 import '../../services/api_service.dart';
+import '../../core/services/socket_service.dart';
 
 class WorkerDashboardScreen extends StatefulWidget {
   const WorkerDashboardScreen({super.key});
@@ -26,6 +27,28 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _setupSocketListeners();
+  }
+
+  void _setupSocketListeners() {
+    final socket = SocketService().socket;
+    if (socket != null) {
+      socket.on('new_booking', (data) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You have a new booking request!'),
+            backgroundColor: Color(0xFF10B981),
+          ),
+        );
+        _loadDashboard(forceRefresh: true);
+      });
+
+      socket.on('booking_status_updated', (data) {
+        if (!mounted) return;
+        _loadDashboard(forceRefresh: true);
+      });
+    }
   }
 
   @override

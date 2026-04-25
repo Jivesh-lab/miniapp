@@ -8,6 +8,7 @@ import '../../core/services/booking_service.dart';
 import '../../core/utils/error_message_helper.dart';
 import '../../core/widgets/booking_card.dart';
 import '../../core/widgets/responsive_layout.dart';
+import '../../core/services/socket_service.dart';
 
 class MyBookingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -40,6 +41,23 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     });
 
     _fetchBookings();
+    _setupSocketListeners();
+  }
+
+  void _setupSocketListeners() {
+    final socket = SocketService().socket;
+    if (socket != null) {
+      socket.on('booking_status_updated', (data) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Your booking status was updated!'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+        _fetchBookings();
+      });
+    }
   }
 
   Future<void> _fetchBookings() async {

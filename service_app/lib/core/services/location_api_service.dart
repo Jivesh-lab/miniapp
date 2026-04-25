@@ -20,16 +20,8 @@ class LocationApiService {
       return _overrideBaseUrl;
     }
 
-    if (kIsWeb) {
-      return 'http://localhost:5000';
-    }
-
-    if (defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS) {
-      return 'http://localhost:5000';
-    }
-
-    return 'http://10.0.2.2:5000';
+    // Use current network IP and port 3000 for consistency
+    return 'http://192.168.0.104:3000';
   }
 
   static final Map<String, String> _cityCache = {};

@@ -468,12 +468,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary),
-          onPressed: () {
-            Navigator.pushReplacementNamed(context, '/login');
-          },
-        ),
+        automaticallyImplyLeading: false,
         title: Text(
           _userLocation,
           style: GoogleFonts.inter(
