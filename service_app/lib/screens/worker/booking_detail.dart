@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/constants/app_colors.dart';
 import '../../core/services/api_exception.dart';
 import '../../core/utils/error_message_helper.dart';
 import '../../models/booking_model.dart';
@@ -118,7 +119,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         await ErrorMessageHelper.showSessionExpiredDialog(
           context,
           message: ErrorMessageHelper.auth(e),
-          loginRoute: '/worker/login',
+          loginRoute: '/login',
         );
         return;
       }
@@ -149,17 +150,73 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
           onPressed: _goBack,
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_ios_new),
         ),
-        title: const Text('Booking Detail'),
+        title: Text(
+          'Booking Detail',
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1F2937),
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.pushNamed(context, '/worker/profile'),
+            icon: const Icon(Icons.person_outline),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          ResponsiveContent(
+            maxWidth: 900,
+            padding: const EdgeInsets.symmetric(horizontal: 0),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withValues(alpha: 0.06),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Current status',
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFF6B7280),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _booking.statusLabel,
+                    style: GoogleFonts.inter(
+                      color: AppColors.primary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           ResponsiveContent(
             maxWidth: 900,
             padding: const EdgeInsets.symmetric(horizontal: 0),
@@ -169,6 +226,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFFE5E7EB)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withValues(alpha: 0.06),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,36 +251,6 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   _DetailRow(label: 'Address', value: _booking.address),
                   _DetailRow(label: 'Date', value: _booking.date),
                   _DetailRow(label: 'Time', value: _booking.time),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Text(
-                        'Status',
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF6B7280),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _booking.statusColor.withOpacity(0.14),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          _booking.statusLabel,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: _booking.statusColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),

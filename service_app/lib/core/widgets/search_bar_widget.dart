@@ -41,14 +41,14 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
         boxShadow: _isFocused
             ? [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.15),
+                  color: AppColors.primary.withValues(alpha: 0.15),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
               ]
             : [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.08),
+                  color: Colors.grey.withValues(alpha: 0.08),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -56,10 +56,13 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
       ),
       child: TextField(
         controller: _controller,
-        onChanged: widget.onChanged,
+        onChanged: (value) {
+          setState(() {});
+          widget.onChanged?.call(value);
+        },
         onSubmitted: widget.onSubmitted,
         onTap: () => setState(() => _isFocused = true),
-        onEditingComplete: () => setState(() => _isFocused = false),
+        onTapOutside: (_) => setState(() => _isFocused = false),
         style: GoogleFonts.inter(
           fontSize: 14,
           color: const Color(0xFF1F2937),
@@ -99,6 +102,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
               : null,
           filled: true,
           fillColor: Colors.white,
+          isDense: false,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 12,

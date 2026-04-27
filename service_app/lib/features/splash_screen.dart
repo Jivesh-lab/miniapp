@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/services/app_api_client.dart';
+import '../core/services/socket_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -57,6 +58,10 @@ class _SplashScreenState extends State<SplashScreen>
 
     final hasSession = await AppApiClient.hasSavedSession();
     if (!mounted) return;
+
+    if (hasSession) {
+      SocketService().initSocket();
+    }
 
     Navigator.pushReplacementNamed(context, hasSession ? '/home' : '/login');
   }

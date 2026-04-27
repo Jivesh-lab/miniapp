@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../constants/app_colors.dart';
 
 class CategoryCard extends StatefulWidget {
   final IconData icon;
@@ -69,14 +70,15 @@ class _CategoryCardState extends State<CategoryCard>
             borderRadius: BorderRadius.circular(16),
             child: Ink(
               decoration: BoxDecoration(
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: Colors.grey.shade200,
+                  color: AppColors.divider,
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.08),
+                    color: Colors.grey.withValues(alpha: 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -84,7 +86,7 @@ class _CategoryCardState extends State<CategoryCard>
               ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
-                splashColor: widget.color.withOpacity(0.15),
+                splashColor: widget.color.withValues(alpha: 0.15),
                 onTapDown: _onTapDown,
                 onTapUp: _onTapUp,
                 onTapCancel: _onTapCancel,
@@ -95,7 +97,7 @@ class _CategoryCardState extends State<CategoryCard>
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: widget.color.withOpacity(0.1),
+                        color: widget.color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(

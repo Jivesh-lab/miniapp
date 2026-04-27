@@ -27,11 +27,14 @@ class WorkerModel {
   final String name;
   final double rating;
   final int reviews;
-  final double distance;
+  final double? distance;
+  final String? distanceFormatted;
   final int pricePerHour;
   final int experience;
   final String avatar;
   final bool isAvailable;
+  final bool isOnline;
+  final DateTime? lastLocationUpdate;
   final List<String> skills;
   final String profileDescription;
   final List<Map<String, dynamic>> aboutReviews;
@@ -43,10 +46,13 @@ class WorkerModel {
     required this.rating,
     required this.reviews,
     required this.distance,
+    required this.distanceFormatted,
     required this.pricePerHour,
     required this.experience,
     required this.avatar,
     required this.isAvailable,
+    required this.isOnline,
+    required this.lastLocationUpdate,
     required this.skills,
     required this.profileDescription,
     required this.aboutReviews,
@@ -61,10 +67,13 @@ class WorkerModel {
       'rating': rating,
       'reviews': reviews,
       'distance': distance,
+      'distanceFormatted': distanceFormatted,
       'pricePerHour': pricePerHour,
       'experience': experience,
       'avatar': avatar,
       'isAvailable': isAvailable,
+      'isOnline': isOnline,
+      'lastLocationUpdate': lastLocationUpdate?.toIso8601String(),
       'skills': skills,
       'profileDescription': profileDescription,
       'aboutReviews': aboutReviews,
@@ -95,19 +104,27 @@ class WorkerModel {
         .take(2)
         .map((e) => e[0].toUpperCase())
         .join();
+    final parsedLastLocationUpdate = DateTime.tryParse(
+      (json['lastLocationUpdate'] ?? '').toString(),
+    );
+    final parsedIsOnline =
+        (json['isOnline'] as bool?) ?? (json['isAvailable'] as bool?) ?? false;
 
     return WorkerModel(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
       name: name,
       rating: (json['rating'] as num?)?.toDouble() ?? 0,
       reviews: (json['reviewsCount'] as num?)?.toInt() ?? parsedReviews.length,
-      distance: (json['distance'] as num?)?.toDouble() ?? 0,
+      distance: (json['distance'] as num?)?.toDouble(),
+      distanceFormatted: (json['distanceFormatted'] ?? json['distanceLabel'])?.toString(),
       pricePerHour: (json['pricePerHour'] as num?)?.toInt() ??
           (json['price'] as num?)?.toInt() ??
           0,
       experience: (json['experience'] as num?)?.toInt() ?? 0,
       avatar: (json['avatar'] ?? initials).toString(),
-      isAvailable: (json['isAvailable'] as bool?) ?? true,
+      isAvailable: parsedIsOnline,
+      isOnline: parsedIsOnline,
+      lastLocationUpdate: parsedLastLocationUpdate,
       skills: List<String>.from((json['skills'] ?? <dynamic>[]) as List<dynamic>),
       profileDescription: (json['profileDescription'] ?? 'No description available').toString(),
       aboutReviews: parsedReviews,
@@ -124,10 +141,13 @@ class WorkerModel {
     double? rating,
     int? reviews,
     double? distance,
+    String? distanceFormatted,
     int? pricePerHour,
     int? experience,
     String? avatar,
     bool? isAvailable,
+    bool? isOnline,
+    DateTime? lastLocationUpdate,
     List<String>? skills,
     String? profileDescription,
     List<Map<String, dynamic>>? aboutReviews,
@@ -139,10 +159,13 @@ class WorkerModel {
       rating: rating ?? this.rating,
       reviews: reviews ?? this.reviews,
       distance: distance ?? this.distance,
+      distanceFormatted: distanceFormatted ?? this.distanceFormatted,
       pricePerHour: pricePerHour ?? this.pricePerHour,
       experience: experience ?? this.experience,
       avatar: avatar ?? this.avatar,
       isAvailable: isAvailable ?? this.isAvailable,
+      isOnline: isOnline ?? this.isOnline,
+      lastLocationUpdate: lastLocationUpdate ?? this.lastLocationUpdate,
       skills: skills ?? this.skills,
       profileDescription: profileDescription ?? this.profileDescription,
       aboutReviews: aboutReviews ?? this.aboutReviews,

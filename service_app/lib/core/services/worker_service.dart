@@ -1,7 +1,7 @@
-import 'package:http/http.dart' as http;
-import 'package:http/http.dart' show TimeoutException;
 import 'dart:async';
 import 'dart:io';
+
+import 'package:http/http.dart' as http;
 
 import '../models/worker_model.dart';
 import 'api_service.dart';
@@ -14,6 +14,8 @@ Map<String, String> buildWorkerQueryParams({
   Object? maxPrice,
   Object? page,
   Object? limit,
+  Object? userLatitude,
+  Object? userLongitude,
 }) {
   final query = <String, String>{};
 
@@ -46,6 +48,16 @@ Map<String, String> buildWorkerQueryParams({
   final maxPriceValue = _parseDoubleParam(maxPrice, min: 0);
   if (maxPriceValue != null) {
     query['maxPrice'] = _numToString(maxPriceValue);
+  }
+
+  final userLatitudeValue = _parseDoubleParam(userLatitude);
+  if (userLatitudeValue != null) {
+    query['userLatitude'] = _numToString(userLatitudeValue);
+  }
+
+  final userLongitudeValue = _parseDoubleParam(userLongitude);
+  if (userLongitudeValue != null) {
+    query['userLongitude'] = _numToString(userLongitudeValue);
   }
 
   return query;
@@ -99,8 +111,72 @@ String _numToString(num value) {
   return value % 1 == 0 ? value.toInt().toString() : value.toString();
 }
 
+class WorkerListResponse {
+  final List<WorkerModel> workers;
+  final bool isFallback;
+
+  WorkerListResponse({
+    required this.workers,
+    this.isFallback = false,
+  });
+}
+
 class WorkerService {
-  Future<List<WorkerModel>> getWorkers({
+  Future<WorkerListResponse> getNearbyWorkers({
+    required String serviceId,
+    required double latitude,
+    required double longitude,
+    String? q,
+    double? rating,
+    int? minPrice,
+    int? maxPrice,
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final query = buildWorkerQueryParams(
+        q: q,
+        rating: rating,
+        minPrice: minPrice,
+        maxPrice: maxPrice,
+        page: page,
+        limit: limit,
+      );
+      query['lat'] = _numToString(latitude);
+      query['lng'] = _numToString(longitude);
+      if (serviceId.trim().isNotEmpty) {
+        query['serviceId'] = serviceId.trim();
+      }
+
+      final response = await http
+          .get(
+            ApiService.uri('/workers/nearby', query),
+            headers: await ApiService.authHeaders(),
+          )
+          .timeout(ApiService.requestTimeout);
+
+      final body = await ApiService.parseAuthenticatedResponse(
+        response,
+        clearSession: ApiService.clearUserSession,
+        loginRoute: '/login',
+      );
+      final data = (body['data'] as List<dynamic>? ?? <dynamic>[])
+          .cast<Map<String, dynamic>>();
+      
+      final isFallback = body['isFallback'] == true;
+
+      return WorkerListResponse(
+        workers: data.map(WorkerModel.fromJson).toList(),
+        isFallback: isFallback,
+      );
+    } on TimeoutException {
+      throw Exception('Network timeout, please try again');
+    } on SocketException {
+      throw Exception('Network error, please check your connection');
+    }
+  }
+
+  Future<WorkerListResponse> getWorkers({
     required String serviceId,
     String? sort,
     String? q,
@@ -109,6 +185,8 @@ class WorkerService {
     int? maxPrice,
     int page = 1,
     int limit = 20,
+    double? userLatitude,
+    double? userLongitude,
   }) async {
     try {
       final query = buildWorkerQueryParams(
@@ -119,9 +197,28 @@ class WorkerService {
         maxPrice: maxPrice,
         page: page,
         limit: limit,
+        userLatitude: userLatitude,
+        userLongitude: userLongitude,
       );
 
-      final path = serviceId.trim().isEmpty ? '/workers/search' : '/workers/$serviceId';
+      final hasLocation = userLatitude != null && userLongitude != null;
+      final normalizedServiceId = serviceId.trim();
+
+      if (hasLocation) {
+        return getNearbyWorkers(
+          serviceId: normalizedServiceId,
+          latitude: userLatitude,
+          longitude: userLongitude,
+          q: q,
+          rating: rating,
+          minPrice: minPrice,
+          maxPrice: maxPrice,
+          page: page,
+          limit: limit,
+        );
+      }
+
+      final path = normalizedServiceId.isEmpty ? '/workers/search' : '/workers/$normalizedServiceId';
 
       final response = await http
           .get(
@@ -137,8 +234,13 @@ class WorkerService {
       );
       final data = (body['data'] as List<dynamic>? ?? <dynamic>[])
           .cast<Map<String, dynamic>>();
+      
+      final isFallback = body['isFallback'] == true;
 
-      return data.map(WorkerModel.fromJson).toList();
+      return WorkerListResponse(
+        workers: data.map(WorkerModel.fromJson).toList(),
+        isFallback: isFallback,
+      );
     } on TimeoutException {
       throw Exception('Network timeout, please try again');
     } on SocketException {
@@ -147,10 +249,29 @@ class WorkerService {
   }
 
   Future<WorkerModel> getWorkerById(String id) async {
+    return getWorkerByIdWithLocation(id);
+  }
+
+  Future<WorkerModel> getWorkerByIdWithLocation(
+    String id, {
+    double? userLatitude,
+    double? userLongitude,
+  }) async {
     try {
+      final query = <String, String>{};
+      if (userLatitude != null) {
+        query['userLatitude'] = _numToString(userLatitude);
+      }
+      if (userLongitude != null) {
+        query['userLongitude'] = _numToString(userLongitude);
+      }
+
       final response = await http
           .get(
-            ApiService.uri('/workers/detail/$id'),
+            ApiService.uri(
+              '/workers/detail/$id',
+              query.isEmpty ? null : query,
+            ),
             headers: await ApiService.authHeaders(),
           )
           .timeout(ApiService.requestTimeout);

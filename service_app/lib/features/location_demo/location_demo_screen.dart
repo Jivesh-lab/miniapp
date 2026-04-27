@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../core/services/location_permission_handler.dart';
-import '../core/services/location_api_service.dart';
+import '../../core/services/location_permission_handler.dart';
+import '../../core/services/location_api_service.dart';
 
 /// Complete home screen with location handling
 /// Features:
@@ -380,10 +379,10 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
         Flexible(
           child: SelectableText(
             value,
-            style: GoogleFonts.inter(
+            style: GoogleFonts.robotoMono(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              fontFamily: 'monospace',
+              color: const Color(0xFF1F2937),
             ),
           ),
         ),

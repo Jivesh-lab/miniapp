@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/constants/app_colors.dart';
 import '../../core/services/api_exception.dart';
 import '../../models/booking_model.dart';
 import '../../core/utils/error_message_helper.dart';
@@ -132,7 +133,7 @@ class _WorkerBookingsScreenState extends State<WorkerBookingsScreen> {
         await ErrorMessageHelper.showSessionExpiredDialog(
           context,
           message: ErrorMessageHelper.auth(error),
-          loginRoute: '/worker/login',
+          loginRoute: '/login',
         );
         return;
       }
@@ -199,16 +200,36 @@ class _WorkerBookingsScreenState extends State<WorkerBookingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
           onPressed: _goBack,
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back_ios_new),
         ),
-        title: const Text('Assigned Bookings'),
+        title: Text(
+          'Assigned Bookings',
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1F2937),
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () => Navigator.pushNamed(context, '/worker/profile'),
+            icon: const Icon(Icons.person_outline),
+          ),
+        ],
       ),
       body: Column(
         children: [
+          ResponsiveContent(
+            maxWidth: 1120,
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+            child: _SummaryStrip(bookings: _bookings),
+          ),
           ResponsiveContent(
             maxWidth: 1120,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -249,6 +270,13 @@ class _WorkerBookingsScreenState extends State<WorkerBookingsScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFFE5E7EB)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.06),
+                blurRadius: 6,
+                offset: const Offset(0, 1),
+              ),
+            ],
           ),
           child: Text(
             'No bookings found for this filter',
@@ -319,7 +347,7 @@ class _FilterBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
         scrollDirection: Axis.horizontal,
         itemCount: filters.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final filter = filters[index];
           final active = selectedFilter == filter;
@@ -363,6 +391,95 @@ class _FilterBar extends StatelessWidget {
   }
 }
 
+class _SummaryStrip extends StatelessWidget {
+  final List<WorkerBooking> bookings;
+
+  const _SummaryStrip({required this.bookings});
+
+  @override
+  Widget build(BuildContext context) {
+    final total = bookings.length;
+    final pending = bookings
+        .where((booking) => booking.status == WorkerBookingStatus.pending)
+        .length;
+    final inProgress = bookings
+        .where((booking) => booking.status == WorkerBookingStatus.inProgress)
+        .length;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.06),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _MiniStat(label: 'Total', value: total.toString()),
+          _DividerLine(),
+          _MiniStat(label: 'Pending', value: pending.toString()),
+          _DividerLine(),
+          _MiniStat(label: 'In Progress', value: inProgress.toString()),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _MiniStat({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: const Color(0xFF6B7280),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 22,
+              color: AppColors.primary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DividerLine extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      width: 1,
+      height: 36,
+      color: const Color(0xFFE5E7EB),
+    );
+  }
+}
+
 class _ErrorView extends StatelessWidget {
   final String message;
   final Future<void> Function() onRetry;
@@ -377,7 +494,11 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(message, textAlign: TextAlign.center),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(color: const Color(0xFF374151)),
+            ),
             const SizedBox(height: 12),
             ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
           ],
@@ -404,6 +525,13 @@ class _BookingCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: const Color(0xFFE5E7EB)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.05),
+                blurRadius: 6,
+                offset: const Offset(0, 1),
+              ),
+            ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,7 +554,7 @@ class _BookingCard extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: booking.statusColor.withOpacity(0.14),
+                    color: booking.statusColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

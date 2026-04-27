@@ -9,6 +9,7 @@ import '../../core/services/booking_service.dart';
 import '../../core/utils/error_message_helper.dart';
 import '../../core/widgets/booking_card.dart';
 import '../../core/widgets/responsive_layout.dart';
+import '../../core/services/socket_service.dart';
 
 class MyBookingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -42,48 +43,22 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     });
 
     _fetchBookings();
-    _startAutoRefresh();
+    _setupSocketListeners();
   }
 
-  void _startAutoRefresh() {
-    // Auto-refresh bookings every 10 seconds to catch updates from backend
-    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      // Only refresh if not already loading
-      if (!_isLoading && mounted) {
-        _fetchBookingsQuietly();
-      }
-    });
-  }
-
-  // Silent refresh (doesn't show loading spinner, just updates data)
-  Future<void> _fetchBookingsQuietly() async {
-    try {
-      final userId = await ApiService.getSavedUserId();
-      final allBookings = await _bookingService.getBookings(userId ?? '');
-
-      if (!mounted) return;
-      setState(() {
-        ongoingBookings =
-            allBookings
-                .where(
-                  (b) =>
-                      b.status == BookingStatus.pending ||
-                      b.status == BookingStatus.confirmed ||
-                      b.status == BookingStatus.inProgress,
-                )
-                .toList()
-              ..sort((a, b) => b.date.compareTo(a.date));
-
-        completedBookings =
-            allBookings
-                .where((b) => b.status == BookingStatus.completed)
-                .toList()
-              ..sort((a, b) => b.date.compareTo(a.date));
+  void _setupSocketListeners() {
+    final socket = SocketService().socket;
+    if (socket != null) {
+      socket.on('booking_status_updated', (data) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Your booking status was updated!'),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+        _fetchBookings();
       });
-
-      _promptRatingIfNeeded();
-    } catch (e) {
-      // Silent fail on auto-refresh - keep existing UI state.
     }
   }
 

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
 import 'api_exception.dart';
 import '../../models/service_item.dart';
+import 'socket_service.dart';
 
 class AppApiClient {
   static const Duration requestTimeout = Duration(seconds: 12);
@@ -27,12 +28,14 @@ class AppApiClient {
   static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
+    SocketService().initSocket();
   }
 
   static Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove('cached_profile');
+    SocketService().disconnect();
   }
 
   static Future<Map<String, String>> _headers({bool withAuth = false}) async {

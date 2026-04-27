@@ -5,10 +5,11 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../config/api_config.dart';
 import 'api_exception.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.0.105:3000/api';
+  static String get baseUrl => ApiConfig.baseUrl;
   static const Duration requestTimeout = Duration(seconds: 10);
   static const String _userTokenKey = 'user_token';
   static const String _userIdKey = 'user_id';
@@ -209,10 +210,12 @@ class ApiService {
   static Future<Map<String, dynamic>> verifyLoginOtp({
     required String tempToken,
     required String otp,
+    required String role,
   }) async {
     final response = await postJson('/auth/verify-login-otp', {
-      'tempToken': tempToken,
+      'identifier': tempToken,
       'otp': otp.trim(),
+      'role': role,
     });
 
     final parsed = parseResponse(response);
@@ -260,7 +263,7 @@ class ApiService {
     return parseResponse(response);
   }
 
-  static Future<void> registerWorker({
+  static Future<Map<String, dynamic>> registerWorker({
     required String name,
     required String phone,
     required String password,
@@ -271,7 +274,7 @@ class ApiService {
       'password': password,
     });
 
-    parseResponse(response);
+    return parseResponse(response);
   }
 
   static Future<http.Response> postJson(

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:async';
 import '../../core/constants/app_colors.dart';
 import '../../core/models/worker_model.dart';
 import '../../core/utils/error_message_helper.dart';
+import '../../core/services/location_service.dart';
 import '../../core/services/worker_service.dart';
 import '../../core/widgets/responsive_layout.dart';
 import '../../core/widgets/search_bar_widget.dart';
@@ -28,19 +30,52 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
   final WorkerService _workerService = WorkerService();
   bool _isLoading = true;
   String? _errorMessage;
+  double? _userLatitude;
+  double? _userLongitude;
+  Timer? _refreshTimer;
 
   List<WorkerModel> _workers = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchWorkers();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+      if (!mounted || _isLoading) {
+        return;
+      }
+      _fetchWorkers();
+    });
+    _loadLocationAndWorkers();
   }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadLocationAndWorkers() async {
+    final location = await LocationService.getUserLocation();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _userLatitude = location?.latitude;
+      _userLongitude = location?.longitude;
+    });
+
+    await _fetchWorkers();
+  }
+
+  bool _isFallback = false;
 
   Future<void> _fetchWorkers() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _isFallback = false;
     });
 
     try {
@@ -48,7 +83,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
           ? _selectedSort
           : null;
 
-      final workers = await _workerService.getWorkers(
+      final response = await _workerService.getWorkers(
         serviceId: (widget.serviceId ?? '').trim(),
         sort: sort,
         q: _searchQuery,
@@ -57,11 +92,14 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
         maxPrice: _priceRange.end.round(),
         page: 1,
         limit: 20,
+        userLatitude: _userLatitude,
+        userLongitude: _userLongitude,
       );
 
       if (!mounted) return;
       setState(() {
-        _workers = workers;
+        _workers = response.workers;
+        _isFallback = response.isFallback;
         _isLoading = false;
       });
     } catch (e) {
@@ -169,42 +207,67 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
     }
 
     if (_workers.isEmpty) {
-      return const Center(child: Text('No workers available'));
+      return const Center(
+        child: Text('No workers available'),
+      );
     }
 
-    return ResponsiveContent(
-      maxWidth: 1160,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: isWide
-          ? GridView.builder(
-              itemCount: _workers.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.55,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_isFallback)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8, top: 4),
+            child: Text(
+              "Showing nearest available workers",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade600,
               ),
-              itemBuilder: (context, index) {
-                return WorkerCard(
-                  worker: _workers[index],
-                  onTap: () =>
-                      _navigateToWorkerDetail(context, _workers[index]),
-                );
-              },
-            )
-          : ListView.builder(
-              itemCount: _workers.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: WorkerCard(
-                    worker: _workers[index],
-                    onTap: () =>
-                        _navigateToWorkerDetail(context, _workers[index]),
-                  ),
-                );
-              },
             ),
+          ),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _fetchWorkers,
+            child: ResponsiveContent(
+              maxWidth: 1160,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: isWide
+                  ? GridView.builder(
+                      itemCount: _workers.length,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                        childAspectRatio: 1.55,
+                      ),
+                      itemBuilder: (context, index) {
+                        return WorkerCard(
+                          worker: _workers[index],
+                          onTap: () =>
+                              _navigateToWorkerDetail(context, _workers[index]),
+                        );
+                      },
+                    )
+                  : ListView.builder(
+                      itemCount: _workers.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: WorkerCard(
+                            worker: _workers[index],
+                            onTap: () =>
+                                _navigateToWorkerDetail(context, _workers[index]),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

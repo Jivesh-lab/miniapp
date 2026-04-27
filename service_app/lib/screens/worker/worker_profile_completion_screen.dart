@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/services/location_service.dart';
 import '../../core/services/service_service.dart';
 import '../../core/utils/error_message_helper.dart';
 import '../../services/api_service.dart';
@@ -120,6 +121,19 @@ class _WorkerProfileCompletionScreenState
         skills: normalizedSkills,
       );
 
+      final liveLocation = await LocationService.getUserLocation();
+      if (liveLocation != null) {
+        try {
+          await _workerApi.updateWorkerLocation(
+            latitude: liveLocation.latitude,
+            longitude: liveLocation.longitude,
+            isOnline: true,
+          );
+        } catch (_) {
+          // Profile update succeeded; location can be updated again later.
+        }
+      }
+
       final session = await _workerApi.getSavedSession();
       if (session != null) {
         try {
@@ -198,7 +212,7 @@ class _WorkerProfileCompletionScreenState
                             Text(
                               'Add service, pricing, location, and skills so customers can discover and book you quickly.',
                               style: GoogleFonts.inter(
-                                color: Colors.white.withOpacity(0.92),
+                                color: Colors.white.withValues(alpha: 0.92),
                                 fontSize: 13,
                                 height: 1.35,
                               ),
@@ -239,7 +253,7 @@ class _WorkerProfileCompletionScreenState
                                 const SizedBox(height: 12),
                               ],
                               DropdownButtonFormField<String>(
-                                value: _selectedServiceId,
+                                initialValue: _selectedServiceId,
                                 isExpanded: true,
                                 decoration: const InputDecoration(
                                   labelText: 'Service',

@@ -1,22 +1,13 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import '../config/api_config.dart';
+
 /// Complete API service for sending location to backend
 /// Handles all communication between Flutter and Node.js backend
 class LocationApiService {
-  static const String _overrideBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: '',
-  );
-
-  // Backend server URL.
-  // Defaults to LAN backend and can be overridden with --dart-define API_BASE_URL.
   static String get baseUrl {
-    if (_overrideBaseUrl.isNotEmpty) {
-      return _overrideBaseUrl;
-    }
-
-    return 'http://192.168.0.105:3000';
+    return ApiConfig.socketUrl;
   }
 
   static final Map<String, String> _cityCache = {};

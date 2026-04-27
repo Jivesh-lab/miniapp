@@ -251,15 +251,15 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.primary.withOpacity(0.1),
-            AppColors.primary.withOpacity(0.05),
+              AppColors.primaryLight,
+              AppColors.background,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -468,12 +468,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary),
-          onPressed: () {
-            Navigator.pushReplacementNamed(context, '/login');
-          },
-        ),
+        automaticallyImplyLeading: false,
         title: Text(
           _userLocation,
           style: GoogleFonts.inter(

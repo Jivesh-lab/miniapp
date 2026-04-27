@@ -49,6 +49,17 @@ const workerSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    geoLocation: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: undefined,
+      },
+      coordinates: {
+        type: [Number],
+        default: undefined,
+      },
+    },
     skills: {
       type: [String],
       default: [],
@@ -131,5 +142,6 @@ const workerSchema = new mongoose.Schema(
 workerSchema.index({ serviceId: 1 });
 workerSchema.index({ rating: -1 });
 workerSchema.index({ price: 1 });
+workerSchema.index({ geoLocation: "2dsphere" }, { sparse: true });
 
 export default mongoose.model("Worker", workerSchema);

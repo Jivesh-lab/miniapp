@@ -7,6 +7,7 @@ import {
   sendWorkerNotFound,
   sendWorkerValidationError,
 } from "../utils/worker-error.util.js";
+import { getIO } from "../socket.js";
 
 const DEFAULT_ALL_SLOTS = ["10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
 
@@ -59,6 +60,20 @@ export const createBooking = async (req, res) => {
       return invalidSlotResponse(res);
     }
 
+    const existingBooking = await Booking.findOne({
+      workerId,
+      date,
+      time,
+      status: { $nin: ["cancelled", "rejected"] },
+    }).lean();
+
+    if (existingBooking) {
+      return res.status(409).json({
+        success: false,
+        message: "This worker is already booked for the selected time slot",
+      });
+    }
+
     const booking = await Booking.create({
       userId,
       workerId,
@@ -67,6 +82,12 @@ export const createBooking = async (req, res) => {
       address,
       status: "pending",
     });
+
+    try {
+      getIO().to(String(workerId)).emit("new_booking", booking);
+    } catch (e) {
+      console.error("Socket error on new_booking:", e);
+    }
 
     return res.status(201).json({
       success: true,
@@ -161,6 +182,12 @@ export const updateBookingStatus = async (req, res) => {
       .populate("workerId", "name rating")
       .lean();
 
+    try {
+      getIO().to(String(updated.userId)).emit("booking_status_updated", updated);
+    } catch (e) {
+      console.error("Socket error on booking_status_updated:", e);
+    }
+
     return res.status(200).json({
       success: true,
       message: "Booking status updated successfully",
@@ -207,6 +234,12 @@ export const cancelBooking = async (req, res) => {
 
     booking.status = "cancelled";
     await booking.save();
+
+    try {
+      getIO().to(String(booking.workerId)).emit("booking_status_updated", booking);
+    } catch (e) {
+      console.error("Socket error on booking_status_updated:", e);
+    }
 
     return res.status(200).json({
       success: true,

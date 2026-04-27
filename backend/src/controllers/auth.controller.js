@@ -3,7 +3,13 @@ import jwt from "jsonwebtoken";
 
 import User from "../models/user.model.js";
 import Worker from "../models/worker.model.js";
+import EmailOtp from "../models/emailOtp.model.js";
+import { sendOtpEmail } from "../utils/email.util.js";
+import crypto from "crypto";
 import { isStrongEnoughPassword, isValidEmail, isValidPhone } from "../utils/validators.js";
+
+const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+const hashOtp = (otp) => crypto.createHash("sha256").update(otp).digest("hex");
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_worker_jwt_secret";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
@@ -128,10 +134,24 @@ export const registerUser = async (req, res) => {
       role: "user",
     });
 
+    const otp = generateOtp();
+    await EmailOtp.deleteMany({ email: normalizedEmail, purpose: "register" });
+    await EmailOtp.create({
+      email: normalizedEmail,
+      purpose: "register",
+      userId: user._id,
+      otpHash: hashOtp(otp),
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    });
+
+    await sendOtpEmail(user.email, otp);
+
     return res.status(201).json({
       success: true,
-      message: "User registered successfully",
-      data: serializeUser(user.toObject()),
+      message: "OTP sent to your email",
+      requires_otp: true,
+      identifier: normalizedEmail,
+      role: "user",
     });
   } catch (error) {
     return res.status(500).json({
@@ -185,7 +205,10 @@ export const registerWorker = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: "Worker registered successfully",
+      message: "Worker account created successfully",
+      requires_otp: false,
+      role: "worker",
+      id: worker._id,
       data: serializeWorker(worker.toObject()),
     });
   } catch (error) {
@@ -245,7 +268,6 @@ export const login = async (req, res) => {
         }
 
         const token = signToken(worker._id.toString(), "worker");
-
         return res.status(200).json({
           success: true,
           message: "Login successful",
@@ -289,7 +311,6 @@ export const login = async (req, res) => {
     }
 
     const token = signToken(user._id.toString(), "user");
-
     return res.status(200).json({
       success: true,
       message: "Login successful",
@@ -311,11 +332,73 @@ export const login = async (req, res) => {
   }
 };
 
-export const verifyLoginOtp = async (_req, res) => {
-  return res.status(501).json({
-    success: false,
-    message: "Login OTP verification is not implemented",
-  });
+export const verifyLoginOtp = async (req, res) => {
+  try {
+    const { identifier, otp, role } = req.body ?? {};
+
+    if (!identifier || !otp || !role) {
+      return sendValidationError(res, "identifier, otp, and role are required");
+    }
+
+    const otpRecord = await EmailOtp.findOne({ 
+      email: String(identifier).toLowerCase(), 
+      purpose: "register" 
+    }).select("+otpHash");
+
+    if (!otpRecord) {
+      return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
+    }
+
+    if (otpRecord.expiresAt < new Date()) {
+      await EmailOtp.deleteOne({ _id: otpRecord._id });
+      return res.status(400).json({ success: false, message: "OTP expired" });
+    }
+
+    if (otpRecord.otpHash !== hashOtp(String(otp))) {
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    }
+
+    await EmailOtp.deleteOne({ _id: otpRecord._id });
+
+    const token = signToken(otpRecord.userId.toString(), role);
+
+    if (role === "worker") {
+      const worker = await Worker.findById(otpRecord.userId).lean();
+      return res.status(200).json({
+        success: true,
+        message: "Login successful",
+        token,
+        role: "worker",
+        profileComplete: isProfileComplete(worker),
+        id: worker._id,
+        data: {
+          ...serializeWorker(worker),
+          token,
+          role: "worker",
+        },
+      });
+    } else {
+      const user = await User.findById(otpRecord.userId).lean();
+      return res.status(200).json({
+        success: true,
+        message: "Login successful",
+        token,
+        role: "user",
+        id: user._id,
+        data: {
+          ...serializeUser(user),
+          token,
+          role: "user",
+        },
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to verify OTP",
+      error: error.message,
+    });
+  }
 };
 
 export const logout = async (req, res) => {

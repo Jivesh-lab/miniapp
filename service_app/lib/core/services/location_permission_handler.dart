@@ -81,11 +81,8 @@ class LocationPermissionHandler {
 
       // Get current position with high accuracy
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 0, // Get position immediately
-          timeLimit: Duration(seconds: 10), // Wait max 10 seconds
-        ),
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
       );
 
       debugPrint(

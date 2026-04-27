@@ -631,7 +631,6 @@ class _BookingScreenState extends State<BookingScreen> {
 
     try {
       await _bookingService.createBooking({
-        'userId': 'demo-user-1',
         'workerId': widget.worker.id,
         'date': _selectedDate.toIso8601String().split('T').first,
         'time': _selectedTimeSlot,
