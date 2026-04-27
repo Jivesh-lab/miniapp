@@ -1,6 +1,7 @@
 # Miscellaneous
 *.class
 *.log
+./backend/env
 *.pyc
 *.swp
 .DS_Store
