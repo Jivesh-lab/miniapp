@@ -120,7 +120,7 @@ const workerSchema = new mongoose.Schema(
     },
     isOnline: {
       type: Boolean,
-      default: false,
+      default: true,
       index: true,
     },
     lastLocationUpdate: {

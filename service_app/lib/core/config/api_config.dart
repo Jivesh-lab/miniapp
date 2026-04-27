@@ -10,14 +10,14 @@ class ApiConfig {
     defaultValue: '',
   );
 
-  // Web runs from localhost, so default to local backend unless overridden.
+  // Default to LAN backend so web and mobile can hit the same host unless overridden.
   static String get socketUrl {
     if (_overrideSocketBaseUrl.isNotEmpty) {
       return _normalizeBase(_overrideSocketBaseUrl);
     }
 
     if (kIsWeb) {
-      return 'http://localhost:3000';
+      return 'http://192.168.0.104:3000';
     }
 
     return 'http://192.168.0.104:3000';

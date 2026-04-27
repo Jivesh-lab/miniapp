@@ -131,7 +131,7 @@ class WorkerService {
     int? minPrice,
     int? maxPrice,
     int page = 1,
-    int limit = 20,
+    int limit = 1000,
   }) async {
     try {
       final query = buildWorkerQueryParams(
@@ -184,7 +184,7 @@ class WorkerService {
     int? minPrice,
     int? maxPrice,
     int page = 1,
-    int limit = 20,
+    int limit = 1000,
     double? userLatitude,
     double? userLongitude,
   }) async {

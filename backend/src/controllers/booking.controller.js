@@ -304,7 +304,7 @@ export const rateBooking = async (req, res) => {
           review: normalizedComment,
         },
       },
-      { new: true, runValidators: true }
+      { returnDocument: "after", runValidators: true }
     ).lean();
 
     const reviewEntry = {

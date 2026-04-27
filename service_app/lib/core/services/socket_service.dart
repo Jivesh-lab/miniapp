@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
@@ -16,7 +18,28 @@ class SocketService {
 
   Future<void> initSocket() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
+    final userToken = prefs.getString('user_token');
+    final legacyToken = prefs.getString('auth_token');
+    final rawWorkerSession = prefs.getString('worker_session');
+
+    String? workerToken;
+    if (rawWorkerSession != null && rawWorkerSession.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(rawWorkerSession);
+        if (decoded is Map<String, dynamic>) {
+          final parsed = (decoded['token'] ?? '').toString();
+          if (parsed.isNotEmpty) {
+            workerToken = parsed;
+          }
+        }
+      } catch (_) {
+        // Ignore invalid worker session payload.
+      }
+    }
+
+    final token = (userToken != null && userToken.isNotEmpty)
+        ? userToken
+        : ((legacyToken != null && legacyToken.isNotEmpty) ? legacyToken : workerToken);
 
     if (token == null) return;
 

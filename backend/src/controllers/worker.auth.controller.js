@@ -199,7 +199,7 @@ export const getWorkerProfile = async (req, res) => {
           location: normalizedLocation,
           skills: normalizedSkills,
         },
-        { new: true, runValidators: true }
+        { returnDocument: "after", runValidators: true }
       )
         .select("name phone serviceId skills location price rating reviews role createdAt updatedAt")
         .lean();
@@ -287,7 +287,7 @@ export const updateWorkerLocation = async (req, res) => {
         isOnline: typeof isOnline === "boolean" ? isOnline : true,
         lastLocationUpdate: new Date(),
       },
-      { new: true, runValidators: true }
+      { returnDocument: "after", runValidators: true }
     )
       .select("name phone latitude longitude geoLocation isOnline lastLocationUpdate")
       .lean();

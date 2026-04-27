@@ -15,7 +15,27 @@ import { errorHandler, notFoundHandler } from "./middleware/error.middleware.js"
 
 const app = express();
 
-app.use(cors());
+// CORS Configuration
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:8081",
+  process.env.FRONTEND_URL || "https://yourdomain.com",
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.post("/api/register", registerUser);

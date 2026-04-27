@@ -11,6 +11,7 @@ import 'api_exception.dart';
 class ApiService {
   static String get baseUrl => ApiConfig.baseUrl;
   static const Duration requestTimeout = Duration(seconds: 10);
+  static const String _legacyAuthTokenKey = 'auth_token';
   static const String _userTokenKey = 'user_token';
   static const String _userIdKey = 'user_id';
   static const String _workerSessionKey = 'worker_session';
@@ -42,8 +43,11 @@ class ApiService {
   static Future<Map<String, String>> authHeaders() async {
     final prefs = await SharedPreferences.getInstance();
     final userToken = prefs.getString(_userTokenKey);
+    final legacyToken = prefs.getString(_legacyAuthTokenKey);
     final workerToken = _extractWorkerToken(prefs.getString(_workerSessionKey));
-    final token = (userToken != null && userToken.isNotEmpty) ? userToken : workerToken;
+    final token = (userToken != null && userToken.isNotEmpty)
+        ? userToken
+        : ((legacyToken != null && legacyToken.isNotEmpty) ? legacyToken : workerToken);
 
     final map = <String, String>{
       'Content-Type': 'application/json',
@@ -59,6 +63,8 @@ class ApiService {
   static Future<void> saveUserSession({required String token, required String userId}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userTokenKey, token);
+    // Backward compatibility for screens still reading auth_token.
+    await prefs.setString(_legacyAuthTokenKey, token);
     await prefs.setString(_userIdKey, userId);
   }
 
@@ -76,6 +82,7 @@ class ApiService {
   static Future<void> clearUserSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userTokenKey);
+    await prefs.remove(_legacyAuthTokenKey);
     await prefs.remove(_userIdKey);
   }
 
@@ -87,6 +94,7 @@ class ApiService {
   static Future<void> clearAllSessions() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userTokenKey);
+    await prefs.remove(_legacyAuthTokenKey);
     await prefs.remove(_userIdKey);
     await prefs.remove(_workerSessionKey);
   }

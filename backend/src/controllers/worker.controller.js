@@ -399,7 +399,7 @@ export const getNearbyWorkers = async (req, res) => {
     const latParsed = parseOptionalNumber(lat);
     const lngParsed = parseOptionalNumber(lng);
     const pageParsed = parseOptionalPositiveInt(req.query.page, 1);
-    const limitParsed = parseOptionalPositiveInt(req.query.limit, 20, 50);
+    const limitParsed = parseOptionalPositiveInt(req.query.limit, 20, 1000);
     const minRatingParsed = parseOptionalNumber(req.query.rating ?? req.query.minRating);
     const minPriceParsed = parseOptionalNumber(req.query.minPrice);
     const maxPriceParsed = parseOptionalNumber(req.query.maxPrice);
@@ -445,8 +445,6 @@ export const getNearbyWorkers = async (req, res) => {
     const match = {
       ...buildCompletedWorkerQuery(),
       role: "worker",
-      isOnline: true,
-      "geoLocation.coordinates": { $exists: true },
     };
 
     if (serviceId !== undefined) {
@@ -479,76 +477,17 @@ export const getNearbyWorkers = async (req, res) => {
       }
     }
 
-    const basePipeline = [
-      {
-        $geoNear: {
-          near: {
-            type: "Point",
-            coordinates: [lngParsed.value, latParsed.value],
-          },
-          maxDistance: 5000,
-          key: "geoLocation",
-          spherical: true,
-          distanceField: "distanceInMeters",
-          query: match,
-        },
-      },
-      {
-        $addFields: {
-          distance: {
-            $round: [{ $divide: ["$distanceInMeters", 1000] }, 1],
-          },
-        },
-      },
-      {
-        $addFields: {
-          distanceFormatted: {
-            $cond: [
-              { $lt: ["$distance", 1] },
-              {
-                $concat: [
-                  { $toString: { $round: ["$distanceInMeters", 0] } },
-                  " m",
-                ],
-              },
-              {
-                $concat: [{ $toString: "$distance" }, " km"],
-              },
-            ],
-          },
-        },
-      },
-      {
-        $project: {
-          distanceInMeters: 0,
-        },
-      },
-    ];
+    const allWorkers = await Worker.find(match).lean();
+    const enrichedWorkers = enrichWorkersWithDistance(
+      allWorkers,
+      latParsed.value,
+      lngParsed.value,
+      true
+    );
 
-    let [countResult, workers] = await Promise.all([
-      Worker.aggregate([...basePipeline, { $count: "total" }]),
-      Worker.aggregate([...basePipeline, { $skip: skip }, { $limit: limit }]),
-    ]);
-
-    let total = countResult[0]?.total ?? 0;
-    let isFallback = false;
-
-    if (total === 0) {
-      const matchForFallback = { ...match };
-      delete matchForFallback["geoLocation.coordinates"];
-
-      const allWorkers = await Worker.find(matchForFallback).lean();
-      const enrichedWorkers = enrichWorkersWithDistance(
-        allWorkers,
-        latParsed.value,
-        lngParsed.value,
-        true
-      );
-      
-      total = enrichedWorkers.length;
-      workers = enrichedWorkers.slice(skip, skip + limit);
-      isFallback = true;
-    }
+    const total = enrichedWorkers.length;
+    const workers = enrichedWorkers.slice(skip, skip + limit);
+    const isFallback = false;
 
     return res.status(200).json({
       success: true,

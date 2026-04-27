@@ -13,7 +13,7 @@ import '../../core/services/socket_service.dart';
 
 class MyBookingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
-  const MyBookingsScreen({Key? key, this.onBack}) : super(key: key);
+  const MyBookingsScreen({super.key, this.onBack});
 
   @override
   State<MyBookingsScreen> createState() => _MyBookingsScreenState();
@@ -49,6 +49,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   void _setupSocketListeners() {
     final socket = SocketService().socket;
     if (socket != null) {
+      socket.off('booking_status_updated');
       socket.on('booking_status_updated', (data) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -60,6 +61,14 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
         _fetchBookings();
       });
     }
+
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      if (!mounted || _isLoading || _isRatingDialogVisible || _isSubmittingRating) {
+        return;
+      }
+      _fetchBookings();
+    });
   }
 
   Future<void> _fetchBookings() async {
@@ -332,6 +341,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
   @override
   void dispose() {
+    SocketService().socket?.off('booking_status_updated');
     _tabController.dispose();
     _autoRefreshTimer?.cancel();
     super.dispose();
@@ -544,7 +554,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
@@ -572,29 +582,33 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
           ),
           const SizedBox(height: 24),
           if (_selectedTabIndex == 0)
-            ElevatedButton.icon(
-              onPressed: () {
-                if (widget.onBack != null) {
-                  widget.onBack!();
-                  return;
-                }
+            SizedBox(
+              width: isMobile ? 190 : 210,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  if (widget.onBack != null) {
+                    widget.onBack!();
+                    return;
+                  }
 
-                Navigator.pushReplacementNamed(context, '/home');
-              },
-              icon: const Icon(Icons.add),
-              label: Text(
-                'Book a Service',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
+                  Navigator.pushReplacementNamed(context, '/home');
+                },
+                icon: const Icon(Icons.add, size: 18),
+                label: Text(
+                  'Book a Service',
+                  style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(0, 40),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
             ),

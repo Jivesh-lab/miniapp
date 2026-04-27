@@ -36,17 +36,20 @@ const startServer = async () => {
     await connectDB();
 
     const port = process.env.PORT || 3000;
+    const env = process.env.NODE_ENV || "development";
+    
     server = app.listen(port, "0.0.0.0", () => {
-      console.log(`Server running at http://192.168.0.104:${port}`);
+      console.log(`✅ Server running on port ${port} (${env})`);
+      console.log(`📍 Listening on 0.0.0.0:${port}`);
     });
 
     initSocket(server);
 
     server.on("error", (error) => {
-      console.error("Server error:", error);
+      console.error("❌ Server error:", error);
     });
   } catch (error) {
-    console.error("Failed to start server:", error);
+    console.error("❌ Failed to start server:", error);
     process.exit(1);
   }
 };

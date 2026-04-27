@@ -91,7 +91,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
         minPrice: _priceRange.start.round(),
         maxPrice: _priceRange.end.round(),
         page: 1,
-        limit: 20,
+        limit: 1000,
         userLatitude: _userLatitude,
         userLongitude: _userLongitude,
       );
@@ -219,7 +219,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
           Padding(
             padding: const EdgeInsets.only(bottom: 8, top: 4),
             child: Text(
-              "Showing nearest available workers",
+              "Showing all matching workers sorted by nearest distance",
               textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 fontSize: 12,

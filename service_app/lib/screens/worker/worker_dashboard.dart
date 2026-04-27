@@ -58,12 +58,6 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
   }
 
   @override
-  void dispose() {
-    _locationSync.stop();
-    super.dispose();
-  }
-
-  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
@@ -217,6 +211,7 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
   @override
   void dispose() {
     _autoRefreshTimer?.cancel();
+    _locationSync.stop();
     super.dispose();
   }
 

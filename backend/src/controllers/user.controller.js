@@ -195,7 +195,7 @@ export const updateUser = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       existing._id,
       { name, phone },
-      { new: true, runValidators: true }
+      { returnDocument: "after", runValidators: true }
     ).lean();
 
     return res.status(200).json({

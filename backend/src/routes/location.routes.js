@@ -65,7 +65,7 @@ export const updateUserLocation = async (req, res) => {
         longitude,
         lastLocationUpdate: new Date(),
       },
-      { new: true, runValidators: true },
+      { returnDocument: 'after', runValidators: true },
     );
 
     if (!updatedUser) {
@@ -142,7 +142,7 @@ export const updateUserProfile = async (req, res) => {
 
     // Update user
     const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     });
 
