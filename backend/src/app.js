@@ -38,6 +38,19 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// ============================================
+// 🏥 HEALTH CHECK ENDPOINT FOR RENDER COLD START
+// ============================================
+// This endpoint helps Flutter warm up the server on startup
+// No authentication required - responds instantly
+app.get("/ping", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "pong",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.post("/api/register", registerUser);
 app.post("/api/login", login);
 app.get("/api/services", getServices);
