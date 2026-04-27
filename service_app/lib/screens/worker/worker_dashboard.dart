@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/constants/app_colors.dart';
 import '../../core/services/api_exception.dart';
 import '../../models/booking_model.dart';
 import '../../core/utils/error_message_helper.dart';
 import '../../core/widgets/responsive_layout.dart';
 import '../../services/api_service.dart';
 import '../../core/services/socket_service.dart';
+import '../../core/services/worker_location_sync_service.dart';
 
 class WorkerDashboardScreen extends StatefulWidget {
   const WorkerDashboardScreen({super.key});
@@ -17,6 +19,7 @@ class WorkerDashboardScreen extends StatefulWidget {
 
 class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
   final _api = WorkerApiService();
+  final _locationSync = WorkerLocationSyncService();
   WorkerSession? _session;
   bool _didInitLoad = false;
   bool _isLoading = true;
@@ -52,6 +55,12 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
   }
 
   @override
+  void dispose() {
+    _locationSync.stop();
+    super.dispose();
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
@@ -83,6 +92,8 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
         throw Exception('Please login again');
       }
 
+      await _locationSync.start();
+
       final bookings = await _api.getWorkerBookings(
         session: session,
         forceRefresh: forceRefresh,
@@ -113,7 +124,7 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
         await ErrorMessageHelper.showSessionExpiredDialog(
           context,
           message: ErrorMessageHelper.auth(error),
-          loginRoute: '/worker/login',
+          loginRoute: '/login',
         );
         return;
       }
@@ -147,39 +158,41 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
     }
   }
 
-  Future<void> _logout() async {
-    await _api.logout();
-    if (!mounted) {
-      return;
-    }
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      '/worker/login',
-      (route) => false,
-    );
+  void _openProfile() {
+    Navigator.pushNamed(context, '/worker/profile');
   }
 
-  void _goBack() {
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context);
+  void _openBookings() {
+    if (_session == null) {
       return;
     }
-
-    Navigator.pushReplacementNamed(context, '/login');
+    Navigator.pushNamed(
+      context,
+      '/worker/bookings',
+      arguments: _session,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6FB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: _goBack,
-          icon: const Icon(Icons.arrow_back),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'Worker Dashboard',
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF1F2937),
+          ),
         ),
-        title: const Text('Worker Dashboard'),
         actions: [
-          IconButton(onPressed: _logout, icon: const Icon(Icons.logout)),
+          IconButton(
+            onPressed: _openProfile,
+            icon: const Icon(Icons.person_outline),
+          ),
         ],
       ),
       body: _buildBody(),
@@ -208,6 +221,14 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
     final completed = _bookings
         .where((b) => b.status == WorkerBookingStatus.completed)
         .length;
+    final activeBooking = _bookings.cast<WorkerBooking?>().firstWhere(
+        (b) =>
+          b != null &&
+          (b.status == WorkerBookingStatus.pending ||
+            b.status == WorkerBookingStatus.confirmed ||
+            b.status == WorkerBookingStatus.inProgress),
+        orElse: () => null,
+      );
 
     return RefreshIndicator(
       onRefresh: () => _loadDashboard(forceRefresh: true),
@@ -225,17 +246,21 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
               ResponsiveContent(
-                maxWidth: 1120,
+                maxWidth: 760,
                 padding: const EdgeInsets.symmetric(horizontal: 0),
                 child: Container(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF1D4ED8), Color(0xFF2563EB)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(18),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withValues(alpha: 0.08),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +268,7 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
                       Text(
                         'Today overview',
                         style: GoogleFonts.inter(
-                          color: Colors.white.withOpacity(0.9),
+                          color: AppColors.primary,
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
@@ -252,19 +277,45 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
                       Text(
                         'Track your assigned jobs and keep delivery on schedule.',
                         style: GoogleFonts.inter(
-                          color: Colors.white,
+                          color: const Color(0xFF1F2937),
                           fontSize: 18,
                           height: 1.3,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
+                      if (activeBooking != null) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryLight,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.alarm_on_rounded, color: AppColors.primary),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  '${activeBooking.customerName} • ${activeBooking.date} ${activeBooking.time}',
+                                  style: GoogleFonts.inter(
+                                    color: const Color(0xFF1F2937),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 14),
               ResponsiveContent(
-                maxWidth: 1120,
+                maxWidth: 760,
                 padding: const EdgeInsets.symmetric(horizontal: 0),
                 child: GridView.count(
                   crossAxisCount: columns,
@@ -303,7 +354,7 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
               ),
               const SizedBox(height: 14),
               ResponsiveContent(
-                maxWidth: 1120,
+                maxWidth: 760,
                 padding: const EdgeInsets.symmetric(horizontal: 0),
                 child: Container(
                   padding: const EdgeInsets.all(16),
@@ -335,17 +386,18 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: _session == null
-                              ? null
-                              : () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/worker/bookings',
-                                    arguments: _session,
-                                  );
-                                },
+                          onPressed: _openBookings,
                           icon: const Icon(Icons.list_alt),
                           label: const Text('View Bookings'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _openProfile,
+                          icon: const Icon(Icons.manage_accounts_outlined),
+                          label: const Text('Open Profile'),
                         ),
                       ),
                     ],
@@ -380,6 +432,13 @@ class _StatCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.06),
+            blurRadius: 6,
+            offset: const Offset(0, 1),
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -388,7 +447,7 @@ class _StatCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 18),

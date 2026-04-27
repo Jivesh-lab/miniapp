@@ -1,27 +1,13 @@
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import '../config/api_config.dart';
 
 /// Complete API service for sending location to backend
 /// Handles all communication between Flutter and Node.js backend
 class LocationApiService {
-  static const String _overrideBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: '',
-  );
-
-  // Backend server URL.
-  // Web: http://localhost:5000
-  // Android emulator: http://10.0.2.2:5000
-  // iOS simulator: http://localhost:5000
-  // Physical device: set your computer's LAN IP, for example http://192.168.1.10:5000
   static String get baseUrl {
-    if (_overrideBaseUrl.isNotEmpty) {
-      return _overrideBaseUrl;
-    }
-
-    // Use current network IP and port 3000 for consistency
-    return 'http://192.168.0.104:3000';
+    return ApiConfig.socketUrl;
   }
 
   static final Map<String, String> _cityCache = {};

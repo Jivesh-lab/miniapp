@@ -12,11 +12,11 @@ import 'features/worker/worker_detail_screen.dart';
 import 'features/booking/booking_screen.dart';
 import 'features/my_bookings/my_bookings_screen.dart';
 import 'features/profie_screen.dart/profile_screen.dart';
-import 'screens/worker/worker_login.dart';
 import 'screens/worker/worker_dashboard.dart';
 import 'screens/worker/worker_bookings.dart';
 import 'screens/worker/booking_detail.dart';
 import 'screens/worker/worker_profile_completion_screen.dart';
+import 'screens/worker/worker_profile_screen.dart';
 
 void main() {
   runApp(const ServiceApp());
@@ -40,10 +40,10 @@ class ServiceApp extends StatelessWidget {
         '/worker-list': (context) => const WorkerListScreen(),
         '/my-bookings': (context) => const MyBookingsScreen(),
         '/profile': (context) => const ProfileScreen(),
-        '/worker/login': (context) => const WorkerLoginScreen(),
         '/worker/complete-profile': (context) => const WorkerProfileCompletionScreen(),
         '/worker/dashboard': (context) => const WorkerDashboardScreen(),
         '/worker/bookings': (context) => const WorkerBookingsScreen(),
+        '/worker/profile': (context) => const WorkerProfileScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/worker-detail') {

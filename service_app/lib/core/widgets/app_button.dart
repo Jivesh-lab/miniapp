@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/app_colors.dart';
 
 class AppButton extends StatelessWidget {
   final String label;
@@ -54,7 +55,7 @@ class AppButton extends StatelessWidget {
         child: CircularProgressIndicator(strokeWidth: 2),
       );
     }
-    return Icon(icon);
+    return Icon(icon, size: 20);
   }
 
   Widget _buildChildOrLoader() {
@@ -65,6 +66,6 @@ class AppButton extends StatelessWidget {
         child: CircularProgressIndicator(strokeWidth: 2),
       );
     }
-    return Text(label);
+    return Text(label, textAlign: TextAlign.center);
   }
 }

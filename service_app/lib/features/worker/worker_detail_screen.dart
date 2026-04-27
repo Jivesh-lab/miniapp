@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/models/worker_model.dart';
 import '../../core/utils/error_message_helper.dart';
+import '../../core/services/location_service.dart';
 import '../../core/services/user_service.dart';
 import '../../core/services/worker_service.dart';
 import '../../core/widgets/responsive_layout.dart';
@@ -25,11 +26,28 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
   WorkerModel? _worker;
   bool _isLoading = true;
   String? _errorMessage;
+  double? _userLatitude;
+  double? _userLongitude;
 
   @override
   void initState() {
     super.initState();
-    _fetchWorker();
+    _loadLocationAndWorker();
+  }
+
+  Future<void> _loadLocationAndWorker() async {
+    final location = await LocationService.getUserLocation();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _userLatitude = location?.latitude;
+      _userLongitude = location?.longitude;
+    });
+
+    await _fetchWorker();
   }
 
   Future<void> _fetchWorker() async {
@@ -39,7 +57,11 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
     });
 
     try {
-      final worker = await _workerService.getWorkerById(widget.workerId);
+      final worker = await _workerService.getWorkerByIdWithLocation(
+        widget.workerId,
+        userLatitude: _userLatitude,
+        userLongitude: _userLongitude,
+      );
       if (!mounted) return;
       setState(() {
         _worker = worker;
@@ -373,7 +395,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                '${worker.distance} km',
+                _distanceLabel(),
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -441,6 +463,24 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
         );
       },
     );
+  }
+
+  String _distanceLabel() {
+    final formatted = worker.distanceFormatted?.trim();
+    if (formatted != null && formatted.isNotEmpty) {
+      return formatted;
+    }
+
+    final distance = worker.distance;
+    if (distance == null) {
+      return 'Location unavailable';
+    }
+
+    if (distance < 1) {
+      return '${(distance * 1000).round()} m';
+    }
+
+    return '${distance.toStringAsFixed(distance % 1 == 0 ? 0 : 1)} km';
   }
 
   Widget _buildSkillsSection(bool isMobile, double padding) {

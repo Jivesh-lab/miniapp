@@ -52,8 +52,15 @@ const parsePagination = (query) => {
   return { page, limit, skip };
 };
 
+const buildCompletedWorkerQuery = () => ({
+  name: { $exists: true, $ne: "" },
+  serviceId: { $exists: true, $ne: null },
+  location: { $exists: true, $ne: "" },
+  price: { $gt: 0 },
+});
+
 const buildWorkerQuery = ({ serviceId, query }) => {
-  const workerQuery = {};
+  const workerQuery = buildCompletedWorkerQuery();
 
   if (serviceId) {
     workerQuery.serviceId = serviceId;
@@ -69,7 +76,9 @@ const buildWorkerQuery = ({ serviceId, query }) => {
   }
 
   if (query.minPrice || query.maxPrice) {
-    workerQuery.price = {};
+    workerQuery.price = {
+      ...workerQuery.price,
+    };
 
     if (query.minPrice) {
       workerQuery.price.$gte = Number(query.minPrice);
@@ -131,14 +140,17 @@ const buildGlobalSortQuery = ({ sort, order }) => {
  * Sorts by distance if sortByDistance is true
  */
 const enrichWorkersWithDistance = (workers, userLatitude, userLongitude, sortByDistance = false) => {
+  const canCalculateDistance =
+    userLatitude !== undefined &&
+    userLongitude !== undefined &&
+    isValidCoordinates(userLatitude, userLongitude);
+
   const enriched = workers.map((worker) => {
     let distance = null;
     let distanceFormatted = null;
 
     if (
-      userLatitude !== undefined &&
-      userLongitude !== undefined &&
-      isValidCoordinates(userLatitude, userLongitude) &&
+      canCalculateDistance &&
       worker.latitude !== null &&
       worker.longitude !== null &&
       isValidCoordinates(worker.latitude, worker.longitude)
@@ -154,7 +166,7 @@ const enrichWorkersWithDistance = (workers, userLatitude, userLongitude, sortByD
     };
   });
 
-  if (sortByDistance) {
+  if (sortByDistance && canCalculateDistance) {
     enriched.sort((a, b) => {
       if (a.distance === null) return 1;
       if (b.distance === null) return -1;
@@ -207,7 +219,7 @@ export const getAllWorkers = async (req, res) => {
       return sendWorkerValidationError(res, "minPrice cannot be greater than maxPrice");
     }
 
-    const workerQuery = {};
+    const workerQuery = buildCompletedWorkerQuery();
 
     if (q !== undefined && typeof q === "object") {
       return sendWorkerValidationError(res, "q must be a string");
@@ -223,7 +235,9 @@ export const getAllWorkers = async (req, res) => {
     }
 
     if (minPrice !== undefined || maxPrice !== undefined) {
-      workerQuery.price = {};
+      workerQuery.price = {
+        ...workerQuery.price,
+      };
 
       if (minPrice !== undefined) {
         workerQuery.price.$gte = minPrice;
@@ -349,17 +363,204 @@ export const getWorkerById = async (req, res) => {
     }
 
     const worker = await Worker.findById(req.params.id).lean();
+    const { userLatitude, userLongitude } = req.query;
+    const userLatParsed = parseOptionalNumber(userLatitude);
+    const userLngParsed = parseOptionalNumber(userLongitude);
+
+    const parseError = [userLatParsed, userLngParsed].find((item) => item?.error);
+    if (parseError) {
+      return sendWorkerValidationError(res, parseError.error);
+    }
 
     if (!worker) {
       return sendWorkerNotFound(res, "Worker not found");
     }
 
+    const [enrichedWorker] = enrichWorkersWithDistance(
+      [worker],
+      userLatParsed.value,
+      userLngParsed.value,
+      false
+    );
+
     return res.status(200).json({
       success: true,
-      data: worker,
+      data: enrichedWorker,
     });
   } catch (err) {
     return handleWorkerException(res, err, "Failed to fetch worker");
+  }
+};
+
+export const getNearbyWorkers = async (req, res) => {
+  try {
+    const { lat, lng, serviceId } = req.query;
+
+    const latParsed = parseOptionalNumber(lat);
+    const lngParsed = parseOptionalNumber(lng);
+    const pageParsed = parseOptionalPositiveInt(req.query.page, 1);
+    const limitParsed = parseOptionalPositiveInt(req.query.limit, 20, 50);
+    const minRatingParsed = parseOptionalNumber(req.query.rating ?? req.query.minRating);
+    const minPriceParsed = parseOptionalNumber(req.query.minPrice);
+    const maxPriceParsed = parseOptionalNumber(req.query.maxPrice);
+
+    const parseError = [
+      latParsed,
+      lngParsed,
+      pageParsed,
+      limitParsed,
+      minRatingParsed,
+      minPriceParsed,
+      maxPriceParsed,
+    ].find((item) => item?.error);
+
+    if (parseError) {
+      return sendWorkerValidationError(res, parseError.error);
+    }
+
+    if (latParsed.value === undefined || lngParsed.value === undefined) {
+      return sendWorkerValidationError(res, "lat and lng are required");
+    }
+
+    if (!isValidCoordinates(latParsed.value, lngParsed.value)) {
+      return sendWorkerValidationError(res, "Invalid latitude or longitude coordinates");
+    }
+
+    const minRating = minRatingParsed.value;
+    const minPrice = minPriceParsed.value;
+    const maxPrice = maxPriceParsed.value;
+
+    if (minRating !== undefined && (minRating < 0 || minRating > 5)) {
+      return sendWorkerValidationError(res, "rating must be between 0 and 5");
+    }
+
+    if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
+      return sendWorkerValidationError(res, "minPrice cannot be greater than maxPrice");
+    }
+
+    const page = pageParsed.value;
+    const limit = limitParsed.value;
+    const skip = (page - 1) * limit;
+
+    const match = {
+      ...buildCompletedWorkerQuery(),
+      role: "worker",
+      isOnline: true,
+      "geoLocation.coordinates": { $exists: true },
+    };
+
+    if (serviceId !== undefined) {
+      if (typeof serviceId !== "string" || !mongoose.Types.ObjectId.isValid(serviceId)) {
+        return sendWorkerValidationError(res, "serviceId must be a valid ObjectId");
+      }
+      match.serviceId = new mongoose.Types.ObjectId(serviceId);
+    }
+
+    if (typeof req.query.q === "string" && req.query.q.trim()) {
+      const pattern = new RegExp(req.query.q.trim(), "i");
+      match.$or = [{ name: pattern }, { skills: pattern }];
+    }
+
+    if (minRating !== undefined) {
+      match.rating = { $gte: minRating };
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      match.price = {
+        ...match.price,
+      };
+
+      if (minPrice !== undefined) {
+        match.price.$gte = minPrice;
+      }
+
+      if (maxPrice !== undefined) {
+        match.price.$lte = maxPrice;
+      }
+    }
+
+    const basePipeline = [
+      {
+        $geoNear: {
+          near: {
+            type: "Point",
+            coordinates: [lngParsed.value, latParsed.value],
+          },
+          maxDistance: 5000,
+          key: "geoLocation",
+          spherical: true,
+          distanceField: "distanceInMeters",
+          query: match,
+        },
+      },
+      {
+        $addFields: {
+          distance: {
+            $round: [{ $divide: ["$distanceInMeters", 1000] }, 1],
+          },
+        },
+      },
+      {
+        $addFields: {
+          distanceFormatted: {
+            $cond: [
+              { $lt: ["$distance", 1] },
+              {
+                $concat: [
+                  { $toString: { $round: ["$distanceInMeters", 0] } },
+                  " m",
+                ],
+              },
+              {
+                $concat: [{ $toString: "$distance" }, " km"],
+              },
+            ],
+          },
+        },
+      },
+      {
+        $project: {
+          distanceInMeters: 0,
+        },
+      },
+    ];
+
+    let [countResult, workers] = await Promise.all([
+      Worker.aggregate([...basePipeline, { $count: "total" }]),
+      Worker.aggregate([...basePipeline, { $skip: skip }, { $limit: limit }]),
+    ]);
+
+    let total = countResult[0]?.total ?? 0;
+    let isFallback = false;
+
+    if (total === 0) {
+      const matchForFallback = { ...match };
+      delete matchForFallback["geoLocation.coordinates"];
+
+      const allWorkers = await Worker.find(matchForFallback).lean();
+      const enrichedWorkers = enrichWorkersWithDistance(
+        allWorkers,
+        latParsed.value,
+        lngParsed.value,
+        true
+      );
+      
+      total = enrichedWorkers.length;
+      workers = enrichedWorkers.slice(skip, skip + limit);
+      isFallback = true;
+    }
+
+    return res.status(200).json({
+      success: true,
+      count: workers.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      data: workers,
+      isFallback,
+    });
+  } catch (err) {
+    return handleWorkerException(res, err, "Failed to fetch nearby workers");
   }
 };
 

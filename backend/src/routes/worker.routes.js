@@ -3,6 +3,7 @@ import {
   getAllWorkers,
   getWorkers,
   getWorkerById,
+  getNearbyWorkers,
   searchWorkers,
   getWorkerAvailableSlots,
 } from "../controllers/worker.controller.js";
@@ -25,11 +26,17 @@ router.put("/profile", authMiddleware, authorizeRoles("worker"), updateWorkerPro
 // POST /api/workers/update-location
 router.post("/update-location", authMiddleware, authorizeRoles("worker"), updateWorkerLocation);
 
+// PUT /api/workers/update-location
+router.put("/update-location", authMiddleware, authorizeRoles("worker"), updateWorkerLocation);
+
 // GET /api/workers/bookings?page=1&limit=10&status=pending
 router.get("/bookings", authMiddleware, authorizeRoles("worker"), getWorkerDashboardBookings);
 
 // GET /api/workers/search?q=...
 router.get("/search", searchWorkers);
+
+// GET /api/workers/nearby?lat=..&lng=..&serviceId=...
+router.get("/nearby", getNearbyWorkers);
 
 // GET /api/workers?page=1&limit=10&sort=rating&order=desc&q=imran&minRating=4&minPrice=100&maxPrice=600
 router.get("/", getAllWorkers);

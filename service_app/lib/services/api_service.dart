@@ -34,7 +34,7 @@ class WorkerSession {
 }
 
 class WorkerApiService {
-  static const String _baseUrl = 'http://192.168.0.104:3000/api';
+  static String get _baseUrl => shared_api.ApiService.baseUrl;
   static const String _sessionKey = 'worker_session';
 
   final Duration _cacheTtl = const Duration(seconds: 30);
@@ -107,7 +107,7 @@ class WorkerApiService {
 
       final body = await _parseAuthenticatedResponse(
         response,
-        loginRoute: '/worker/login',
+        loginRoute: '/login',
         clearSession: clearSession,
       );
       final data = (body['data'] as List<dynamic>? ?? <dynamic>[])
@@ -142,7 +142,7 @@ class WorkerApiService {
 
       final body = await _parseAuthenticatedResponse(
         response,
-        loginRoute: '/worker/login',
+        loginRoute: '/login',
         clearSession: clearSession,
       );
       final data = (body['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
@@ -227,7 +227,7 @@ class WorkerApiService {
 
       final body = await _parseAuthenticatedResponse(
         response,
-        loginRoute: '/worker/login',
+        loginRoute: '/login',
         clearSession: clearSession,
       );
 
@@ -266,7 +266,45 @@ class WorkerApiService {
 
       final body = await _parseAuthenticatedResponse(
         response,
-        loginRoute: '/worker/login',
+        loginRoute: '/login',
+        clearSession: clearSession,
+      );
+
+      return (body['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
+    } catch (error) {
+      if (error is ApiException) {
+        rethrow;
+      }
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updateWorkerLocation({
+    required double latitude,
+    required double longitude,
+    bool isOnline = true,
+  }) async {
+    try {
+      final session = await getSavedSession();
+
+      if (session == null) {
+        throw const ApiException(message: 'Please login again', statusCode: 401);
+      }
+
+      final response = await _putJson(
+        '$_baseUrl/workers/update-location',
+        {
+          'latitude': latitude,
+          'longitude': longitude,
+          'isOnline': isOnline,
+        },
+        token: session.token,
+      );
+      
+
+      final body = await _parseAuthenticatedResponse(
+        response,
+        loginRoute: '/login',
         clearSession: clearSession,
       );
 

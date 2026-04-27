@@ -203,24 +203,13 @@ export const registerWorker = async (req, res) => {
       role: "worker",
     });
 
-    const otp = generateOtp();
-    console.log(`MOCK SMS OTP for ${worker.phone}: ${otp}`);
-    
-    await EmailOtp.deleteMany({ email: worker.phone, purpose: "register" });
-    await EmailOtp.create({
-      email: worker.phone,
-      purpose: "register",
-      userId: worker._id,
-      otpHash: hashOtp(otp),
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-    });
-
     return res.status(201).json({
       success: true,
-      message: "OTP sent to your phone",
-      requires_otp: true,
-      identifier: worker.phone,
+      message: "Worker account created successfully",
+      requires_otp: false,
       role: "worker",
+      id: worker._id,
+      data: serializeWorker(worker.toObject()),
     });
   } catch (error) {
     if (error?.code === 11000) {

@@ -108,14 +108,15 @@ class WorkerCard extends StatelessWidget {
   }
 
   Widget _buildAvailabilityChip() {
-    if (!worker.isAvailable) {
-      return const SizedBox.shrink();
-    }
+    final isOnline = worker.isOnline;
+    final backgroundColor = isOnline ? Colors.green.shade50 : Colors.grey.shade100;
+    final textColor = isOnline ? Colors.green.shade700 : Colors.grey.shade700;
+    final label = isOnline ? 'Online' : 'Offline';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -125,22 +126,59 @@ class WorkerCard extends StatelessWidget {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: Colors.green,
+              color: isOnline ? Colors.green : Colors.grey,
               borderRadius: BorderRadius.circular(3),
             ),
           ),
           const SizedBox(width: 4),
           Text(
-            'Available',
+            label,
             style: GoogleFonts.inter(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: Colors.green.shade700,
+              color: textColor,
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _distanceLabel() {
+    final formatted = worker.distanceFormatted?.trim();
+    if (formatted != null && formatted.isNotEmpty) {
+      return '$formatted away';
+    }
+
+    final distance = worker.distance;
+    if (distance == null) {
+      return 'Location unavailable';
+    }
+
+    if (distance < 1) {
+      final meters = (distance * 1000).round();
+      return '$meters m away';
+    }
+
+    return '${distance.toStringAsFixed(distance % 1 == 0 ? 0 : 1)} km away';
+  }
+
+  String? _lastSeenLabel() {
+    if (worker.isOnline || worker.lastLocationUpdate == null) {
+      return null;
+    }
+
+    final difference = DateTime.now().difference(worker.lastLocationUpdate!);
+    if (difference.inMinutes < 1) {
+      return 'last seen just now';
+    }
+    if (difference.inHours < 1) {
+      return 'last seen ${difference.inMinutes} min ago';
+    }
+    if (difference.inDays < 1) {
+      return 'last seen ${difference.inHours} hr ago';
+    }
+    return 'last seen ${difference.inDays} d ago';
   }
 
   Widget _buildArrowIcon() {
@@ -186,7 +224,7 @@ class WorkerCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      '${worker.distance} km away',
+                      _distanceLabel(),
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: Colors.grey.shade600,
@@ -197,6 +235,18 @@ class WorkerCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (_lastSeenLabel() != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  _lastSeenLabel()!,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: Colors.grey.shade500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
               const SizedBox(height: 6),
               Wrap(
                 spacing: 8,
@@ -244,9 +294,16 @@ class WorkerCard extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         Text(
-          '${worker.distance} km away',
+          _distanceLabel(),
           style: GoogleFonts.inter(fontSize: 11, color: Colors.grey.shade600),
         ),
+        if (_lastSeenLabel() != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            _lastSeenLabel()!,
+            style: GoogleFonts.inter(fontSize: 11, color: Colors.grey.shade500),
+          ),
+        ],
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,

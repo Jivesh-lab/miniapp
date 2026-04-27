@@ -280,12 +280,16 @@ export const updateWorkerLocation = async (req, res) => {
       {
         latitude: lat,
         longitude: lng,
+        geoLocation: {
+          type: "Point",
+          coordinates: [lng, lat],
+        },
         isOnline: typeof isOnline === "boolean" ? isOnline : true,
         lastLocationUpdate: new Date(),
       },
       { new: true, runValidators: true }
     )
-      .select("name phone latitude longitude isOnline lastLocationUpdate")
+      .select("name phone latitude longitude geoLocation isOnline lastLocationUpdate")
       .lean();
 
     if (!worker) {
