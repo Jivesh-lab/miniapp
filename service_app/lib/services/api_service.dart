@@ -181,8 +181,8 @@ class WorkerApiService {
       }
 
       return session;
-    } catch (_) {
-      await clearSession();
+    } catch (e) {
+      // Don't clear session on parse error - just return null and let caller handle
       return null;
     }
   }

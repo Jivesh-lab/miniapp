@@ -170,6 +170,22 @@ class AppApiClient {
   }
 
   static Future<void> logout() async {
+    try {
+      // Best effort logout API call
+      final token = await getToken();
+      if (token != null && token.isNotEmpty) {
+        await http
+            .post(
+              _uri('/auth/logout'),
+              headers: await _headers(withAuth: true),
+              body: jsonEncode(<String, dynamic>{}),
+            )
+            .timeout(requestTimeout);
+      }
+    } catch (_) {
+      // Best effort logout; local session is cleared below
+    }
+    
     await clearSession();
   }
 }

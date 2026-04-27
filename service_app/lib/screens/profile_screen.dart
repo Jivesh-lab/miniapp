@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/services/app_api_client.dart';
 import '../core/services/api_exception.dart';
+import '../core/utils/error_message_helper.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -43,12 +44,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
 
       if (error.statusCode == 401) {
-        await AppApiClient.clearSession();
         if (!mounted) {
           return;
         }
 
-        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        await ErrorMessageHelper.showSessionExpiredDialog(
+          context,
+          message: 'Your session has expired. Please login again.',
+          loginRoute: '/login',
+        );
         return;
       }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -19,6 +21,7 @@ class _WorkerBookingsScreenState extends State<WorkerBookingsScreen> {
   final _api = WorkerApiService();
 
   WorkerSession? _session;
+  Timer? _autoRefreshTimer;
   bool _didInitLoad = false;
   String _selectedFilter = 'all';
   bool _isLoading = true;
@@ -46,6 +49,44 @@ class _WorkerBookingsScreenState extends State<WorkerBookingsScreen> {
     }
 
     _loadBookings();
+    _startAutoRefresh();
+  }
+
+  void _startAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (!mounted || _isLoading) {
+        return;
+      }
+      _loadBookingsQuietly();
+    });
+  }
+
+  Future<void> _loadBookingsQuietly() async {
+    try {
+      _session ??= await _api.getSavedSession();
+      final session = _session;
+      if (session == null) {
+        return;
+      }
+
+      final bookings = await _api.getWorkerBookings(
+        session: session,
+        forceRefresh: true,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _bookings = bookings;
+        _isError = false;
+        _errorMessage = null;
+      });
+    } catch (_) {
+      // Silent auto-refresh failure; keep existing UI state.
+    }
   }
 
   Future<void> _loadBookings({bool forceRefresh = false}) async {
@@ -147,6 +188,12 @@ class _WorkerBookingsScreenState extends State<WorkerBookingsScreen> {
     }
 
     Navigator.pushReplacementNamed(context, '/worker/dashboard');
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
   }
 
   @override

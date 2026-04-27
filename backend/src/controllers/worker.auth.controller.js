@@ -17,7 +17,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev_worker_jwt_secret";
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 
 const signWorkerToken = (workerId) => {
-  return jwt.sign({ id: workerId, role: "worker" }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign({ userId: workerId, role: "worker" }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
 
 const isProfileComplete = (worker) => {

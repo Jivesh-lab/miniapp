@@ -241,7 +241,7 @@ class ApiService {
       // Best effort. Local session is always cleared below.
     }
 
-    await clearAllSessions();
+    await clearUserSession();
   }
 
   static Future<Map<String, dynamic>> registerUser({

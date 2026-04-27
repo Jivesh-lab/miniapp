@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -17,6 +19,7 @@ class WorkerDashboardScreen extends StatefulWidget {
 class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
   final _api = WorkerApiService();
   WorkerSession? _session;
+  Timer? _autoRefreshTimer;
   bool _didInitLoad = false;
   bool _isLoading = true;
   bool _isError = false;
@@ -43,6 +46,44 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
     }
 
     _loadDashboard();
+    _startAutoRefresh();
+  }
+
+  void _startAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (!mounted || _isLoading) {
+        return;
+      }
+      _loadDashboardQuietly();
+    });
+  }
+
+  Future<void> _loadDashboardQuietly() async {
+    try {
+      _session ??= await _api.getSavedSession();
+      final session = _session;
+      if (session == null) {
+        return;
+      }
+
+      final bookings = await _api.getWorkerBookings(
+        session: session,
+        forceRefresh: true,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _bookings = bookings;
+        _isError = false;
+        _errorMessage = null;
+      });
+    } catch (_) {
+      // Silent auto-refresh failure; keep existing UI state.
+    }
   }
 
   Future<void> _loadDashboard({bool forceRefresh = false}) async {
@@ -143,6 +184,12 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
     }
 
     Navigator.pushReplacementNamed(context, '/login');
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    super.dispose();
   }
 
   @override

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
@@ -27,6 +28,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   bool _isRatingDialogVisible = false;
   bool _isSubmittingRating = false;
   final Set<String> _promptedRatingBookingIds = <String>{};
+  Timer? _autoRefreshTimer;
 
   List<BookingModel> ongoingBookings = [];
   List<BookingModel> completedBookings = [];
@@ -40,6 +42,49 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     });
 
     _fetchBookings();
+    _startAutoRefresh();
+  }
+
+  void _startAutoRefresh() {
+    // Auto-refresh bookings every 10 seconds to catch updates from backend
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      // Only refresh if not already loading
+      if (!_isLoading && mounted) {
+        _fetchBookingsQuietly();
+      }
+    });
+  }
+
+  // Silent refresh (doesn't show loading spinner, just updates data)
+  Future<void> _fetchBookingsQuietly() async {
+    try {
+      final userId = await ApiService.getSavedUserId();
+      final allBookings = await _bookingService.getBookings(userId ?? '');
+
+      if (!mounted) return;
+      setState(() {
+        ongoingBookings =
+            allBookings
+                .where(
+                  (b) =>
+                      b.status == BookingStatus.pending ||
+                      b.status == BookingStatus.confirmed ||
+                      b.status == BookingStatus.inProgress,
+                )
+                .toList()
+              ..sort((a, b) => b.date.compareTo(a.date));
+
+        completedBookings =
+            allBookings
+                .where((b) => b.status == BookingStatus.completed)
+                .toList()
+              ..sort((a, b) => b.date.compareTo(a.date));
+      });
+
+      _promptRatingIfNeeded();
+    } catch (e) {
+      // Silent fail on auto-refresh - keep existing UI state.
+    }
   }
 
   Future<void> _fetchBookings() async {
@@ -313,6 +358,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _autoRefreshTimer?.cancel();
     super.dispose();
   }
 

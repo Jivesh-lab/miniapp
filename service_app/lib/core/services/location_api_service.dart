@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -11,25 +10,13 @@ class LocationApiService {
   );
 
   // Backend server URL.
-  // Web: http://localhost:5000
-  // Android emulator: http://10.0.2.2:5000
-  // iOS simulator: http://localhost:5000
-  // Physical device: set your computer's LAN IP, for example http://192.168.1.10:5000
+  // Defaults to LAN backend and can be overridden with --dart-define API_BASE_URL.
   static String get baseUrl {
     if (_overrideBaseUrl.isNotEmpty) {
       return _overrideBaseUrl;
     }
 
-    if (kIsWeb) {
-      return 'http://localhost:5000';
-    }
-
-    if (defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS) {
-      return 'http://localhost:5000';
-    }
-
-    return 'http://10.0.2.2:5000';
+    return 'http://192.168.0.105:3000';
   }
 
   static final Map<String, String> _cityCache = {};
