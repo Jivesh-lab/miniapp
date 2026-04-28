@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/services/connectivity_service.dart';
 import '../../core/utils/error_message_helper.dart';
 import '../../core/widgets/responsive_layout.dart';
 import '../../services/api_service.dart';
@@ -63,6 +64,9 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
     if (!mounted) {
       return;
     }
+    if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+      return;
+    }
     Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
   }
 
@@ -93,6 +97,9 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
   }
 
   Future<void> _showEditProfile() async {
+    if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+      return;
+    }
     await Navigator.pushNamed(context, '/worker/complete-profile');
     if (!mounted) {
       return;
@@ -149,7 +156,9 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
               Navigator.pop(context);
               return;
             }
-            Navigator.pushReplacementNamed(context, '/worker/dashboard');
+            ConnectivityService.ensureConnectedOrShow(context).then((ok) {
+              if (ok) Navigator.pushReplacementNamed(context, '/worker/dashboard');
+            });
           },
         ),
         title: Text(

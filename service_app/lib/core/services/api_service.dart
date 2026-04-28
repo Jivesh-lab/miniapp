@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -6,11 +6,20 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
+import 'network_service.dart';
 import 'api_exception.dart';
 
 class ApiService {
   static String get baseUrl => ApiConfig.baseUrl;
-  static const Duration requestTimeout = Duration(seconds: 10);
+
+  // Render cold starts can take longer on first request.
+  static Duration get requestTimeout {
+    return ApiConfig.isProduction
+        ? const Duration(seconds: 30)
+        : const Duration(seconds: 12);
+  }
+
+  static const int _maxRetries = 2;
   static const String _legacyAuthTokenKey = 'auth_token';
   static const String _userTokenKey = 'user_token';
   static const String _userIdKey = 'user_id';
@@ -36,18 +45,27 @@ class ApiService {
     return null;
   }
 
+  static Future<String?> _readToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userToken = prefs.getString(_userTokenKey);
+    if (userToken != null && userToken.isNotEmpty) {
+      return userToken;
+    }
+
+    final legacyToken = prefs.getString(_legacyAuthTokenKey);
+    if (legacyToken != null && legacyToken.isNotEmpty) {
+      return legacyToken;
+    }
+
+    return _extractWorkerToken(prefs.getString(_workerSessionKey));
+  }
+
   static Map<String, String> get headers => {
         'Content-Type': 'application/json',
       };
 
   static Future<Map<String, String>> authHeaders() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userToken = prefs.getString(_userTokenKey);
-    final legacyToken = prefs.getString(_legacyAuthTokenKey);
-    final workerToken = _extractWorkerToken(prefs.getString(_workerSessionKey));
-    final token = (userToken != null && userToken.isNotEmpty)
-        ? userToken
-        : ((legacyToken != null && legacyToken.isNotEmpty) ? legacyToken : workerToken);
+    final token = await _readToken();
 
     final map = <String, String>{
       'Content-Type': 'application/json',
@@ -58,6 +76,54 @@ class ApiService {
     }
 
     return map;
+  }
+
+  static Future<Map<String, String>> _requiredAuthHeaders() async {
+    final map = await authHeaders();
+    if (!map.containsKey('Authorization')) {
+      throw const ApiException(
+        message: 'No token, unauthorized',
+        statusCode: 401,
+      );
+    }
+
+    return map;
+  }
+
+  static Future<http.Response> _executeWithRetry(
+    Future<http.Response> Function() request,
+  ) async {
+    final hasInternet = await NetworkService.hasInternetConnection();
+    if (!hasInternet) {
+      throw const ApiException(
+        message: 'Please check your internet connection',
+        statusCode: 0,
+      );
+    }
+    var attempt = 0;
+
+    while (true) {
+      try {
+        return await request().timeout(requestTimeout);
+      } on TimeoutException {
+        if (attempt >= _maxRetries) {
+          throw const ApiException(
+            message: 'Network timeout. Please try again.',
+            statusCode: 408,
+          );
+        }
+      } on SocketException {
+        if (attempt >= _maxRetries) {
+          throw const ApiException(
+            message: 'Network error. Please check your connection.',
+            statusCode: 0,
+          );
+        }
+      }
+
+      attempt += 1;
+      await Future.delayed(Duration(seconds: attempt));
+    }
   }
 
   static Future<void> saveUserSession({required String token, required String userId}) async {
@@ -154,10 +220,11 @@ class ApiService {
       return body;
     }
 
-    if (response.statusCode == 401) {
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      await clearSession();
       throw ApiException(
         message: body['message']?.toString() ?? 'Session expired or invalid token',
-        statusCode: 401,
+        statusCode: response.statusCode,
       );
     }
 
@@ -204,7 +271,6 @@ class ApiService {
     } else if (responseRole == 'user') {
       if (token.isNotEmpty && id.isNotEmpty) {
         await saveUserSession(token: token, userId: id);
-        // Save user name and other data locally
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_name', name);
         await prefs.setString('user_email', email);
@@ -290,19 +356,15 @@ class ApiService {
     Map<String, dynamic> payload, {
     bool useAuthHeaders = false,
   }) async {
-    try {
-      return await http
-          .post(
-            uri(path),
-            headers: useAuthHeaders ? await authHeaders() : headers,
-            body: jsonEncode(payload),
-          )
-          .timeout(requestTimeout);
-    } on TimeoutException {
-      throw const ApiException(message: 'Network timeout, please try again', statusCode: 408);
-    } on SocketException {
-      throw const ApiException(message: 'Network error, please check your connection', statusCode: 0);
-    }
+    final requestHeaders = useAuthHeaders ? await _requiredAuthHeaders() : headers;
+
+    return _executeWithRetry(
+      () => http.post(
+        uri(path),
+        headers: requestHeaders,
+        body: jsonEncode(payload),
+      ),
+    );
   }
 
   static Future<http.Response> getJson(
@@ -310,18 +372,14 @@ class ApiService {
     Map<String, String>? query,
     bool useAuthHeaders = false,
   }) async {
-    try {
-      return await http
-          .get(
-            uri(path, query),
-            headers: useAuthHeaders ? await authHeaders() : headers,
-          )
-          .timeout(requestTimeout);
-    } on TimeoutException {
-      throw const ApiException(message: 'Network timeout, please try again', statusCode: 408);
-    } on SocketException {
-      throw const ApiException(message: 'Network error, please check your connection', statusCode: 0);
-    }
+    final requestHeaders = useAuthHeaders ? await _requiredAuthHeaders() : headers;
+
+    return _executeWithRetry(
+      () => http.get(
+        uri(path, query),
+        headers: requestHeaders,
+      ),
+    );
   }
 
   static Future<http.Response> putJson(
@@ -329,19 +387,15 @@ class ApiService {
     Map<String, dynamic> payload, {
     bool useAuthHeaders = false,
   }) async {
-    try {
-      return await http
-          .put(
-            uri(path),
-            headers: useAuthHeaders ? await authHeaders() : headers,
-            body: jsonEncode(payload),
-          )
-          .timeout(requestTimeout);
-    } on TimeoutException {
-      throw const ApiException(message: 'Network timeout, please try again', statusCode: 408);
-    } on SocketException {
-      throw const ApiException(message: 'Network error, please check your connection', statusCode: 0);
-    }
+    final requestHeaders = useAuthHeaders ? await _requiredAuthHeaders() : headers;
+
+    return _executeWithRetry(
+      () => http.put(
+        uri(path),
+        headers: requestHeaders,
+        body: jsonEncode(payload),
+      ),
+    );
   }
 
   static Future<http.Response> patchJson(
@@ -349,18 +403,15 @@ class ApiService {
     Map<String, dynamic> payload, {
     bool useAuthHeaders = false,
   }) async {
-    try {
-      return await http
-          .patch(
-            uri(path),
-            headers: useAuthHeaders ? await authHeaders() : headers,
-            body: jsonEncode(payload),
-          )
-          .timeout(requestTimeout);
-    } on TimeoutException {
-      throw const ApiException(message: 'Network timeout, please try again', statusCode: 408);
-    } on SocketException {
-      throw const ApiException(message: 'Network error, please check your connection', statusCode: 0);
-    }
+    final requestHeaders = useAuthHeaders ? await _requiredAuthHeaders() : headers;
+
+    return _executeWithRetry(
+      () => http.patch(
+        uri(path),
+        headers: requestHeaders,
+        body: jsonEncode(payload),
+      ),
+    );
   }
 }
+

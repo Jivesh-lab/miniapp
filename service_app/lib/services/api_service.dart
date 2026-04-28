@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/services/api_service.dart' as shared_api;
+import '../core/services/connectivity_service.dart';
 import '../core/services/api_exception.dart';
 import '../models/booking_model.dart';
 
@@ -356,6 +357,14 @@ class WorkerApiService {
     String? token,
   }) async {
     try {
+      final hasInternet = await ConnectivityService.checkConnected();
+      if (!hasInternet) {
+        throw const ApiException(
+          message: 'Please check your internet connection',
+          statusCode: 0,
+        );
+      }
+
       final headers = <String, String>{
         'Content-Type': 'application/json',
       };

@@ -1,3 +1,102 @@
+import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+
+class LocationService {
+  LocationService._();
+
+  /// Ensures that location service is enabled and permission is granted.
+  /// Returns true when ready. If not, shows dialogs to guide the user.
+  static Future<bool> ensureServiceAndPermission(BuildContext context) async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      final opened = await _showEnableLocationDialog(context);
+      if (opened) {
+        // After user returns from settings, re-check.
+        serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      }
+      if (!serviceEnabled) return false;
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.denied) {
+      // Still denied.
+      await _showPermissionDeniedDialog(context);
+      return false;
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      // Permissions are permanently denied, open app settings.
+      await _showPermissionDeniedForeverDialog(context);
+      return false;
+    }
+
+    return true;
+  }
+
+  static Future<bool> _showEnableLocationDialog(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Location Required'),
+        content: const Text(
+            'Location service is turned off. The app requires location to function.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop(true);
+              await Geolocator.openLocationSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+
+    return result == true;
+  }
+
+  static Future<void> _showPermissionDeniedDialog(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Location Permission'),
+        content: const Text(
+            'Location permission was denied. Please allow location access to continue.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('OK')),
+        ],
+      ),
+    );
+  }
+
+  static Future<void> _showPermissionDeniedForeverDialog(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Location Permission'),
+        content: const Text(
+            'Location permission is permanently denied. Please open app settings and enable location.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              await Geolocator.openAppSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+}
 import 'package:geolocator/geolocator.dart';
 
 class LocationService {

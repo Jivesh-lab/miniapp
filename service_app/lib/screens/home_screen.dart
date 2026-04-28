@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/config/api_config.dart';
+import '../core/services/connectivity_service.dart';
 import '../core/services/app_api_client.dart';
 import '../core/services/api_exception.dart';
 import '../models/service_item.dart';
@@ -57,6 +58,10 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+      return;
+    }
+
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
@@ -67,7 +72,12 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Services'),
         actions: [
           IconButton(
-            onPressed: () => Navigator.pushNamed(context, '/profile'),
+            onPressed: () async {
+              if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+                return;
+              }
+              Navigator.pushNamed(context, '/profile');
+            },
             icon: const Icon(Icons.person_outline),
           ),
           IconButton(

@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import 'core/config/app_theme.dart';
 import 'core/models/worker_model.dart';
 import 'core/navigation/app_navigator.dart';
 import 'features/splash_screen.dart';
 import 'features/home/home_screen.dart';
+import 'features/no_internet_screen.dart';
 import 'features/auth/loginscreen.dart';
 import 'features/auth/signup_screen.dart';
 import 'features/worker/worker_list_screen.dart';
@@ -37,6 +38,7 @@ class ServiceApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/home': (context) => const HomeScreen(),
+        '/no-internet': (context) => const NoInternetScreen(),
         '/worker-list': (context) => const WorkerListScreen(),
         '/my-bookings': (context) => const MyBookingsScreen(),
         '/profile': (context) => const ProfileScreen(),
@@ -75,3 +77,4 @@ class ServiceApp extends StatelessWidget {
     );
   }
 }
+

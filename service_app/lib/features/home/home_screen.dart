@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/api_exception.dart';
 import '../../core/services/location_api_service.dart';
+import '../../core/services/location_permission_handler.dart';
 import '../../core/services/service_service.dart';
 import '../../core/utils/error_message_helper.dart';
 import '../../core/widgets/category_card.dart';
@@ -33,12 +34,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-    _fetchServices();
-    _fetchLocation();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadUserData();
+      _fetchServices();
+      _fetchLocation();
+    });
   }
 
-  // ─── LOCATION LOGIC (FIX #1) ───────────────────────────────────────
+  // ΓöÇΓöÇΓöÇ LOCATION LOGIC (FIX #1) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   Future<void> _fetchLocation() async {
     try {
       // Step 1: Check if location services are enabled
@@ -47,6 +50,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!serviceEnabled) {
         if (!mounted) return;
         setState(() => _userLocation = 'Location OFF');
+        await _showLocationRequiredDialog(
+          'Location is required to show nearby services. Please enable location in settings.',
+        );
         return;
       }
 
@@ -58,6 +64,9 @@ class _HomeScreenState extends State<HomeScreen> {
         if (permission == LocationPermission.denied) {
           if (!mounted) return;
           setState(() => _userLocation = 'Permission denied');
+          await _showLocationRequiredDialog(
+            'Please allow location permission to show nearby services.',
+          );
           return;
         }
       }
@@ -65,6 +74,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (permission == LocationPermission.deniedForever) {
         if (!mounted) return;
         setState(() => _userLocation = 'Permission denied');
+        await _showLocationRequiredDialog(
+          'Location permission is permanently denied. Open settings to enable it.',
+        );
         return;
       }
 
@@ -91,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
 
       if (city != 'Unknown' && city.trim().isNotEmpty) {
-        setState(() => _userLocation = '📍 $city');
+        setState(() => _userLocation = '≡ƒôì $city');
       } else {
         setState(() => _userLocation = 'Location not found');
       }
@@ -149,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ─── BUILD (FIX #2: IndexedStack for bottom nav) ──────────────────
+  // ΓöÇΓöÇΓöÇ BUILD (FIX #2: IndexedStack for bottom nav) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   @override
   Widget build(BuildContext context) {
     // For Home tab: use Scaffold with our AppBar + home body
@@ -160,17 +172,17 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(
         index: _selectedNavIndex,
         children: [
-          // Tab 0: Home — needs its own Scaffold+AppBar
+          // Tab 0: Home ΓÇö needs its own Scaffold+AppBar
           Scaffold(
             backgroundColor: AppColors.background,
             appBar: _buildAppBar(),
             body: _buildHomeBody(),
           ),
-          // Tab 1: Bookings — has its own Scaffold+AppBar
+          // Tab 1: Bookings ΓÇö has its own Scaffold+AppBar
           MyBookingsScreen(
             onBack: () => setState(() => _selectedNavIndex = 0),
           ),
-          // Tab 2: Profile — has its own Scaffold+AppBar
+          // Tab 2: Profile ΓÇö has its own Scaffold+AppBar
           ProfileScreen(
             onBack: () => setState(() => _selectedNavIndex = 0),
             onNavigateToBookings: () => setState(() => _selectedNavIndex = 1),
@@ -196,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const SizedBox(height: 20),
                 
-                // 🎯 USER GREETING SECTION
+                // ≡ƒÄ» USER GREETING SECTION
                 _buildGreetingSection(),
                 
                 const SizedBox(height: 28),
@@ -242,7 +254,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// 🎯 Greeting section with user name and location
+  /// ≡ƒÄ» Greeting section with user name and location
   Widget _buildGreetingSection() {
     final greeting = _getTimeBasedGreeting();
     
@@ -287,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 TextSpan(
-                  text: ' 👋',
+                  text: ' ≡ƒæï',
                   style: GoogleFonts.spaceGrotesk(fontSize: 24),
                 ),
               ],
@@ -558,7 +570,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ─── BOTTOM NAV (FIX #2) ──────────────────────────────────────────
+  // ΓöÇΓöÇΓöÇ BOTTOM NAV (FIX #2) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   Widget _buildBottomNavBar() {
     return Container(
       decoration: BoxDecoration(
@@ -575,7 +587,7 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _selectedNavIndex,
         onTap: (index) {
           setState(() => _selectedNavIndex = index);
-          // NO Navigator.push — just switch index
+          // NO Navigator.push ΓÇö just switch index
         },
         items: [
           BottomNavigationBarItem(
@@ -617,3 +629,4 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/services/api_service.dart';
+import '../../core/services/connectivity_service.dart';
 import '../../core/services/app_api_client.dart';
 import '../../core/utils/error_message_helper.dart';
 
@@ -55,6 +56,10 @@ class _OtpScreenState extends State<OtpScreen> {
           : <String, dynamic>{};
       final role = (response['role'] ?? data['role'] ?? widget.role).toString().toLowerCase();
       final profileComplete = response['profileComplete'] == true || data['profileComplete'] == true;
+
+      if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+        return;
+      }
 
       if (role == 'worker') {
         Navigator.pushReplacementNamed(
@@ -162,7 +167,12 @@ class _OtpScreenState extends State<OtpScreen> {
                           Align(
                             alignment: Alignment.center,
                             child: TextButton(
-                              onPressed: () => Navigator.pop(context),
+                              onPressed: () async {
+                                if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+                                  return;
+                                }
+                                Navigator.pop(context);
+                              },
                               child: const Text('Back to Login'),
                             ),
                           ),

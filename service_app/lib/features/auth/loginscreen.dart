@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/services/api_service.dart';
+import '../../core/services/connectivity_service.dart';
 import '../../core/utils/error_message_helper.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
@@ -55,6 +56,10 @@ class _LoginScreenState extends State<LoginScreen> {
           : <String, dynamic>{};
       final role = (response['role'] ?? data['role'] ?? _selectedRole).toString().toLowerCase();
       final profileComplete = response['profileComplete'] == true || data['profileComplete'] == true;
+
+      if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+        return;
+      }
 
       if (role == 'worker') {
         Navigator.pushReplacementNamed(
@@ -218,7 +223,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: TextButton(
                               onPressed: _isLoading
                                   ? null
-                                  : () => Navigator.pushNamed(context, '/signup'),
+                                  : () async {
+                                      if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+                                        return;
+                                      }
+                                      Navigator.pushNamed(context, '/signup');
+                                    },
                               style: TextButton.styleFrom(
                                 minimumSize: Size.zero,
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

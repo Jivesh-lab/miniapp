@@ -1,7 +1,8 @@
-import 'package:http/http.dart' as http;
+﻿import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import '../config/api_config.dart';
+import 'network_service.dart';
 
 /// Complete API service for sending location to backend
 /// Handles all communication between Flutter and Node.js backend
@@ -36,6 +37,9 @@ class LocationApiService {
     _cityInFlight[key] = future;
 
     try {
+      if (!await NetworkService.hasInternetConnection()) {
+        throw Exception('Please check your internet connection');
+      }
       return await future;
     } finally {
       _cityInFlight.remove(key);
@@ -48,6 +52,9 @@ class LocationApiService {
     String key,
   ) async {
     try {
+      if (!await NetworkService.hasInternetConnection()) {
+        throw Exception('Please check your internet connection');
+      }
       final response = await http
           .post(
             Uri.parse('$baseUrl/get-city'),
@@ -90,6 +97,9 @@ class LocationApiService {
     required String userToken,
   }) async {
     try {
+      if (!await NetworkService.hasInternetConnection()) {
+        throw Exception('Please check your internet connection');
+      }
       // Validate inputs
       if (latitude < -90 || latitude > 90) {
         throw Exception('Invalid latitude: must be between -90 and 90');
@@ -148,6 +158,9 @@ class LocationApiService {
     String? address,
   }) async {
     try {
+      if (!await NetworkService.hasInternetConnection()) {
+        throw Exception('Please check your internet connection');
+      }
       final body = jsonEncode({
         'latitude': latitude,
         'longitude': longitude,
@@ -184,6 +197,9 @@ class LocationApiService {
     double radiusKm = 10,
   }) async {
     try {
+      if (!await NetworkService.hasInternetConnection()) {
+        throw Exception('Please check your internet connection');
+      }
       final queryParams = {
         'userLatitude': latitude.toString(),
         'userLongitude': longitude.toString(),
@@ -218,3 +234,4 @@ class LocationApiService {
     }
   }
 }
+

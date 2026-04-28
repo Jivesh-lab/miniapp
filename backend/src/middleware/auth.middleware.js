@@ -17,7 +17,10 @@ export const authMiddleware = async (req, res, next) => {
   const token = extractToken(req);
 
   if (!token) {
-    return res.status(401).json({ message: "No token, unauthorized" });
+    return res.status(401).json({
+      success: false,
+      message: "No token, unauthorized",
+    });
   }
 
   try {
@@ -25,7 +28,10 @@ export const authMiddleware = async (req, res, next) => {
     const tokenUserId = decoded?.userId ?? decoded?.id;
 
     if (!tokenUserId || !decoded?.role) {
-      return res.status(401).json({ message: "Invalid token" });
+      return res.status(403).json({
+        success: false,
+        message: "Invalid token",
+      });
     }
 
     const normalizedId = String(tokenUserId);
@@ -48,17 +54,26 @@ export const authMiddleware = async (req, res, next) => {
     return next();
   } catch (error) {
     if (error?.name === "TokenExpiredError") {
-      return res.status(401).json({ message: "Token expired, login again" });
+      return res.status(401).json({
+        success: false,
+        message: "Token expired, login again",
+      });
     }
 
-    return res.status(401).json({ message: "Invalid token" });
+    return res.status(403).json({
+      success: false,
+      message: "Invalid token",
+    });
   }
 };
 
 export const authorizeRoles = (...roles) => {
   return (req, res, next) => {
     if (!req.user?.role || !roles.includes(req.user.role)) {
-      return res.status(403).json({ message: "Forbidden" });
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+      });
     }
 
     return next();
@@ -72,7 +87,10 @@ export const protectWorker = (req, res, next) => {
     }
 
     if (req.user?.role !== "worker") {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+      });
     }
 
     return next();
@@ -86,7 +104,10 @@ export const protectUser = (req, res, next) => {
     }
 
     if (req.user?.role !== "user") {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden",
+      });
     }
 
     return next();

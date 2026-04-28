@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/services/connectivity_service.dart';
 import '../../core/services/api_exception.dart';
 import '../../models/booking_model.dart';
 import '../../core/utils/error_message_helper.dart';
@@ -194,18 +195,23 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
   }
 
   void _openProfile() {
-    Navigator.pushNamed(context, '/worker/profile');
+    ConnectivityService.ensureConnectedOrShow(context).then((ok) {
+      if (ok) Navigator.pushNamed(context, '/worker/profile');
+    });
   }
 
   void _openBookings() {
     if (_session == null) {
       return;
     }
-    Navigator.pushNamed(
-      context,
-      '/worker/bookings',
-      arguments: _session,
-    );
+    ConnectivityService.ensureConnectedOrShow(context).then((ok) {
+      if (!ok) return;
+      Navigator.pushNamed(
+        context,
+        '/worker/bookings',
+        arguments: _session,
+      );
+    });
   }
 
   @override

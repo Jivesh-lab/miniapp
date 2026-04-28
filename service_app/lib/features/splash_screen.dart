@@ -1,9 +1,11 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../core/services/connectivity_service.dart';
 import '../core/services/app_api_client.dart';
+import '../core/services/network_service.dart';
 import '../core/services/socket_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -55,6 +57,14 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _goNext() async {
     if (!mounted) return;
+
+    final hasInternet = await ConnectivityService.checkConnected();
+    if (!mounted) return;
+
+    if (!hasInternet) {
+      Navigator.pushReplacementNamed(context, '/no-internet');
+      return;
+    }
 
     final hasSession = await AppApiClient.hasSavedSession();
     if (!mounted) return;
@@ -206,3 +216,6 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
+
+
+

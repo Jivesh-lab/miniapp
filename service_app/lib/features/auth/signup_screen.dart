@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/services/api_service.dart';
+import '../../core/services/connectivity_service.dart';
 import '../../core/utils/error_message_helper.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
@@ -106,6 +107,9 @@ class _SignupScreenState extends State<SignupScreen> {
       if (!mounted) return;
 
       if (response['requires_otp'] == true) {
+        if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+          return;
+        }
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -123,6 +127,9 @@ class _SignupScreenState extends State<SignupScreen> {
         'Account created. Please log in.',
       );
 
+      if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+        return;
+      }
       Navigator.pushReplacementNamed(context, '/login', arguments: 'user');
     } catch (e) {
       if (!mounted) return;
@@ -155,6 +162,9 @@ class _SignupScreenState extends State<SignupScreen> {
       if (!mounted) return;
 
       if (response['requires_otp'] == true) {
+        if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+          return;
+        }
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -172,6 +182,9 @@ class _SignupScreenState extends State<SignupScreen> {
         'Worker account created. Please complete your profile after login.',
       );
 
+      if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+        return;
+      }
       Navigator.pushReplacementNamed(context, '/login', arguments: 'worker');
     } catch (e) {
       if (!mounted) return;
@@ -182,7 +195,11 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   void _openSignupRole(String role) {
-    Navigator.pushNamed(context, '/signup', arguments: role);
+    ConnectivityService.ensureConnectedOrShow(context).then((ok) {
+      if (ok && mounted) {
+        Navigator.pushNamed(context, '/signup', arguments: role);
+      }
+    });
   }
 
   Widget _buildRoleChoice() {
@@ -457,7 +474,12 @@ class _SignupScreenState extends State<SignupScreen> {
                         TextButton(
                           onPressed: _isLoading
                               ? null
-                              : () => Navigator.pushReplacementNamed(context, '/login'),
+                              : () async {
+                                  if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+                                    return;
+                                  }
+                                  Navigator.pushReplacementNamed(context, '/login');
+                                },
                           child: const Text('Already have an account? Login'),
                         ),
                       ],

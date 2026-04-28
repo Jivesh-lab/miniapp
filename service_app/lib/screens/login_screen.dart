@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/services/connectivity_service.dart';
 import '../core/services/app_api_client.dart';
 import '../core/services/api_exception.dart';
 
@@ -42,9 +43,19 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
+      final canNavigate = await ConnectivityService.ensureConnectedOrShow(context);
+      if (!canNavigate || !mounted) {
+        return;
+      }
+
       Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
     } on ApiException catch (error) {
       if (!mounted) {
+        return;
+      }
+
+      if (error.message.toLowerCase().contains('internet connection')) {
+        await ConnectivityService.ensureConnectedOrShow(context);
         return;
       }
 
@@ -142,7 +153,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           TextButton(
                             onPressed: _isLoading
                                 ? null
-                                : () {
+                                : () async {
+                                    if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+                                      return;
+                                    }
                                     Navigator.pushNamed(context, '/register');
                                   },
                             child: const Text('Create a new account'),

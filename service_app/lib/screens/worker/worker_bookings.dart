@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/services/connectivity_service.dart';
 import '../../core/services/api_exception.dart';
 import '../../models/booking_model.dart';
 import '../../core/utils/error_message_helper.dart';
@@ -188,7 +189,9 @@ class _WorkerBookingsScreenState extends State<WorkerBookingsScreen> {
       return;
     }
 
-    Navigator.pushReplacementNamed(context, '/worker/dashboard');
+    ConnectivityService.ensureConnectedOrShow(context).then((ok) {
+      if (ok) Navigator.pushReplacementNamed(context, '/worker/dashboard');
+    });
   }
 
   @override
@@ -218,7 +221,12 @@ class _WorkerBookingsScreenState extends State<WorkerBookingsScreen> {
         ),
         actions: [
           IconButton(
-            onPressed: () => Navigator.pushNamed(context, '/worker/profile'),
+            onPressed: () async {
+              if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+                return;
+              }
+              Navigator.pushNamed(context, '/worker/profile');
+            },
             icon: const Icon(Icons.person_outline),
           ),
         ],

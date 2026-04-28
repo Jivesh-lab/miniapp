@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/services/connectivity_service.dart';
 import '../core/services/app_api_client.dart';
 import '../core/services/api_exception.dart';
 import '../core/utils/error_message_helper.dart';
@@ -66,6 +67,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _logout() async {
     await AppApiClient.logout();
     if (!mounted) {
+      return;
+    }
+
+    if (!await ConnectivityService.ensureConnectedOrShow(context)) {
       return;
     }
 

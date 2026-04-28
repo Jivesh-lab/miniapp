@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/services/connectivity_service.dart';
 import '../../core/services/api_exception.dart';
 import '../../core/services/service_service.dart';
 import '../../core/widgets/category_card.dart';
@@ -362,7 +363,10 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary),
-          onPressed: () {
+          onPressed: () async {
+            if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+              return;
+            }
             Navigator.pushReplacementNamed(context, '/login');
           },
         ),
@@ -376,7 +380,10 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         actions: [
           GestureDetector(
-            onTap: () {
+            onTap: () async {
+              if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+                return;
+              }
               _selectedNavIndex = 2;
               setState(() {});
               Navigator.pushNamed(context, '/profile');
@@ -459,15 +466,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _navigateToWorkerList(BuildContext context, String serviceId, String serviceName) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => WorkerListScreen(
-          serviceId: serviceId,
-          serviceName: serviceName,
+    ConnectivityService.ensureConnectedOrShow(context).then((ok) {
+      if (!ok) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WorkerListScreen(
+            serviceId: serviceId,
+            serviceName: serviceName,
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 
   Widget _buildBottomNavBar() {
@@ -482,10 +492,14 @@ class _HomeScreenState extends State<HomeScreen> {
           case 0:
             break;
           case 1:
-            Navigator.pushNamed(context, '/my-bookings');
+            ConnectivityService.ensureConnectedOrShow(context).then((ok) {
+              if (ok) Navigator.pushNamed(context, '/my-bookings');
+            });
             break;
           case 2:
-            Navigator.pushNamed(context, '/profile');
+            ConnectivityService.ensureConnectedOrShow(context).then((ok) {
+              if (ok) Navigator.pushNamed(context, '/profile');
+            });
             break;
         }
       },

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/connectivity_service.dart';
 import '../services/api_exception.dart';
 
 class ErrorMessageHelper {
@@ -105,8 +106,11 @@ class ErrorMessageHelper {
               child: const Text('Stay'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.of(dialogContext).pop();
+                if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+                  return;
+                }
                 Navigator.pushNamedAndRemoveUntil(context, loginRoute, (route) => false);
               },
               child: const Text('Login again'),

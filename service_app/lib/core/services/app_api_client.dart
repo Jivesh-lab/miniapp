@@ -1,39 +1,84 @@
+﻿import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
-import 'api_exception.dart';
+import '../utils/checks.dart';
+import 'network_service.dart';
 import '../../models/service_item.dart';
+import 'api_exception.dart';
 import 'socket_service.dart';
 
 class AppApiClient {
-  static const Duration requestTimeout = Duration(seconds: 12);
-  static const String _tokenKey = 'auth_token';
+  static Duration get requestTimeout {
+    return ApiConfig.isProduction
+        ? const Duration(seconds: 30)
+        : const Duration(seconds: 12);
+  }
+
+  static const int _maxRetries = 2;
+  static const String _legacyTokenKey = 'auth_token';
+  static const String _userTokenKey = 'user_token';
+  static const String _workerSessionKey = 'worker_session';
 
   static Uri _uri(String path) => Uri.parse('${ApiConfig.baseUrl}$path');
 
-  static Future<bool> hasSavedSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString(_tokenKey);
-    return token != null && token.isNotEmpty;
+  static String? _extractWorkerToken(String? rawSession) {
+    if (rawSession == null || rawSession.isEmpty) {
+      return null;
+    }
+
+    try {
+      final decoded = jsonDecode(rawSession);
+      if (decoded is Map<String, dynamic>) {
+        final token = (decoded['token'] ?? '').toString();
+        if (token.isNotEmpty) {
+          return token;
+        }
+      }
+    } catch (_) {
+      // Ignore malformed session payload.
+    }
+
+    return null;
   }
 
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_tokenKey);
+    final userToken = prefs.getString(_userTokenKey);
+    if (userToken != null && userToken.isNotEmpty) {
+      return userToken;
+    }
+
+    final legacyToken = prefs.getString(_legacyTokenKey);
+    if (legacyToken != null && legacyToken.isNotEmpty) {
+      return legacyToken;
+    }
+
+    return _extractWorkerToken(prefs.getString(_workerSessionKey));
+  }
+
+  static Future<bool> hasSavedSession() async {
+    final token = await getToken();
+    return token != null && token.isNotEmpty;
   }
 
   static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, token);
+    await prefs.setString(_legacyTokenKey, token);
+    await prefs.setString(_userTokenKey, token);
     SocketService().initSocket();
   }
 
   static Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);
+    await prefs.remove(_legacyTokenKey);
+    await prefs.remove(_userTokenKey);
+    await prefs.remove('user_id');
+    await prefs.remove(_workerSessionKey);
     await prefs.remove('cached_profile');
     SocketService().disconnect();
   }
@@ -43,12 +88,49 @@ class AppApiClient {
 
     if (withAuth) {
       final token = await getToken();
-      if (token != null && token.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $token';
+      if (token == null || token.isEmpty) {
+        throw const ApiException(message: 'No token, unauthorized', statusCode: 401);
       }
+      headers['Authorization'] = 'Bearer $token';
     }
 
     return headers;
+  }
+
+  static Future<http.Response> _executeWithRetry(
+    Future<http.Response> Function() request,
+  ) async {
+    final hasInternet = await ConnectivityService.checkConnected();
+    if (!hasInternet) {
+      throw const ApiException(
+        message: 'Please check your internet connection',
+        statusCode: 0,
+      );
+    }
+    var attempt = 0;
+
+    while (true) {
+      try {
+        return await request().timeout(requestTimeout);
+      } on TimeoutException {
+        if (attempt >= _maxRetries) {
+          throw const ApiException(
+            message: 'Network timeout. Please try again.',
+            statusCode: 408,
+          );
+        }
+      } on SocketException {
+        if (attempt >= _maxRetries) {
+          throw const ApiException(
+            message: 'Network error. Please check your connection.',
+            statusCode: 0,
+          );
+        }
+      }
+
+      attempt += 1;
+      await Future.delayed(Duration(seconds: attempt));
+    }
   }
 
   static Map<String, dynamic> _decodeBody(http.Response response) {
@@ -62,7 +144,7 @@ class AppApiClient {
         return decoded;
       }
     } catch (_) {
-      // Fall through to the generic error below.
+      // Fall through to generic error.
     }
 
     throw ApiException(
@@ -71,12 +153,16 @@ class AppApiClient {
     );
   }
 
-  static void _throwIfError(http.Response response) {
+  static Future<void> _throwIfError(http.Response response) async {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return;
     }
 
     final body = _decodeBody(response);
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      await clearSession();
+    }
+
     throw ApiException(
       message: body['message']?.toString() ?? 'Request failed',
       statusCode: response.statusCode,
@@ -87,18 +173,18 @@ class AppApiClient {
     required String identifier,
     required String password,
   }) async {
-    final response = await http
-        .post(
-          _uri('/login'),
-          headers: await _headers(),
-          body: jsonEncode({
-            'identifier': identifier,
-            'password': password,
-          }),
-        )
-        .timeout(requestTimeout);
+    final response = await _executeWithRetry(
+      () => http.post(
+        _uri('/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'identifier': identifier,
+          'password': password,
+        }),
+      ),
+    );
 
-    _throwIfError(response);
+    await _throwIfError(response);
 
     final body = _decodeBody(response);
     final token = (body['token'] ?? (body['data'] as Map<String, dynamic>?)?['token'] ?? '').toString();
@@ -115,32 +201,32 @@ class AppApiClient {
     required String phone,
     required String password,
   }) async {
-    final response = await http
-        .post(
-          _uri('/register'),
-          headers: await _headers(),
-          body: jsonEncode({
-            'name': name,
-            'email': email,
-            'phone': phone,
-            'password': password,
-          }),
-        )
-        .timeout(requestTimeout);
+    final response = await _executeWithRetry(
+      () => http.post(
+        _uri('/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'phone': phone,
+          'password': password,
+        }),
+      ),
+    );
 
-    _throwIfError(response);
+    await _throwIfError(response);
     return _decodeBody(response);
   }
 
   static Future<List<ServiceItem>> getServices() async {
-    final response = await http
-        .get(
-          _uri('/services'),
-          headers: await _headers(),
-        )
-        .timeout(requestTimeout);
+    final response = await _executeWithRetry(
+      () => http.get(
+        _uri('/services'),
+        headers: {'Content-Type': 'application/json'},
+      ),
+    );
 
-    _throwIfError(response);
+    await _throwIfError(response);
 
     final body = _decodeBody(response);
     final rawServices = (body['data'] as List<dynamic>? ?? <dynamic>[]);
@@ -152,14 +238,14 @@ class AppApiClient {
   }
 
   static Future<Map<String, dynamic>> getProfile() async {
-    final response = await http
-        .get(
-          _uri('/profile'),
-          headers: await _headers(withAuth: true),
-        )
-        .timeout(requestTimeout);
+    final response = await _executeWithRetry(
+      () async => http.get(
+        _uri('/profile'),
+        headers: await _headers(withAuth: true),
+      ),
+    );
 
-    _throwIfError(response);
+    await _throwIfError(response);
 
     final body = _decodeBody(response);
     final profile = body['data'];
@@ -174,21 +260,21 @@ class AppApiClient {
 
   static Future<void> logout() async {
     try {
-      // Best effort logout API call
       final token = await getToken();
       if (token != null && token.isNotEmpty) {
-        await http
-            .post(
-              _uri('/auth/logout'),
-              headers: await _headers(withAuth: true),
-              body: jsonEncode(<String, dynamic>{}),
-            )
-            .timeout(requestTimeout);
+        await _executeWithRetry(
+          () => http.post(
+            _uri('/auth/logout'),
+            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+            body: jsonEncode(<String, dynamic>{}),
+          ),
+        );
       }
     } catch (_) {
-      // Best effort logout; local session is cleared below
+      // Best effort logout; local session is cleared below.
     }
-    
+
     await clearSession();
   }
 }
+

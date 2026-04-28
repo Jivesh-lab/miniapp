@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/services/location_service.dart';
 import '../../core/services/location_permission_handler.dart';
 import '../../core/services/location_api_service.dart';
 
@@ -47,32 +48,17 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
     });
 
     try {
-      // Step 1: Request permission
-      final hasPermission =
-          await LocationPermissionHandler.requestLocationPermission();
-
-      if (!hasPermission) {
+      // Ask the shared location helper to handle service + permission.
+      final ready = await LocationService.ensureServiceAndPermission(context);
+      if (!ready) {
         setState(() {
-          _errorMessage =
-              'Location permission denied. Please enable in settings.';
+          _errorMessage = 'Location is required. Please enable it in settings.';
           _isLoading = false;
         });
         return;
       }
 
-      // Step 2: Check if location service is enabled
-      final isEnabled =
-          await LocationPermissionHandler.isLocationServiceEnabled();
-
-      if (!isEnabled) {
-        setState(() {
-          _errorMessage = 'Location services disabled. Please enable.';
-          _isLoading = false;
-        });
-        return;
-      }
-
-      // Step 3: Get current location
+      // Step 2: Get current location
       final position =
           await LocationPermissionHandler.getCurrentLocation();
 
@@ -84,14 +70,14 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
         return;
       }
 
-      // Step 4: Convert coordinates to address
+      // Step 3: Convert coordinates to address
       final address =
           await LocationPermissionHandler.getAddressFromCoordinates(
         position.latitude,
         position.longitude,
       );
 
-      // Step 5: Update UI with location data
+      // Step 4: Update UI with location data
       setState(() {
         _latitude = position.latitude;
         _longitude = position.longitude;
@@ -99,7 +85,7 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
         _isLoading = false;
       });
 
-      // Step 6 (Optional): Send location to backend
+      // Step 5 (Optional): Send location to backend
       await _sendLocationToBackend();
     } catch (e) {
       setState(() {
