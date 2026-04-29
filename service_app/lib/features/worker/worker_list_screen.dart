@@ -22,7 +22,8 @@ class WorkerListScreen extends StatefulWidget {
   State<WorkerListScreen> createState() => _WorkerListScreenState();
 }
 
-class _WorkerListScreenState extends State<WorkerListScreen> {
+class _WorkerListScreenState extends State<WorkerListScreen>
+    with WidgetsBindingObserver {
   String _selectedSort = 'nearest';
   String _searchQuery = '';
   double _minRating = 0;
@@ -39,6 +40,7 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _refreshTimer = Timer.periodic(const Duration(seconds: 25), (_) {
       if (!mounted || _isLoading) {
         return;
@@ -49,8 +51,16 @@ class _WorkerListScreenState extends State<WorkerListScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadLocationAndWorkers();
+    }
+  }
+
+  @override
   void dispose() {
     _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 

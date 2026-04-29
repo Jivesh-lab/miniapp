@@ -6,8 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
-import '../utils/checks.dart';
-import 'network_service.dart';
+import 'connectivity_service.dart';
 import '../../models/service_item.dart';
 import 'api_exception.dart';
 import 'socket_service.dart';

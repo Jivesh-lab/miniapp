@@ -1,5 +1,6 @@
 ﻿import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:geocoding/geocoding.dart' as geocoding;
 
 import '../config/api_config.dart';
 import 'network_service.dart';
@@ -46,6 +47,26 @@ class LocationApiService {
     }
   }
 
+  static Future<String> _resolveCityLocally(double latitude, double longitude) async {
+    try {
+      final placemarks = await geocoding.placemarkFromCoordinates(latitude, longitude);
+      if (placemarks.isEmpty) {
+        return 'Unknown';
+      }
+
+      final placemark = placemarks.first;
+      final city = placemark.locality ??
+          placemark.subAdministrativeArea ??
+          placemark.administrativeArea ??
+          placemark.name ??
+          'Unknown';
+
+      return city.trim().isEmpty ? 'Unknown' : city.trim();
+    } catch (_) {
+      return 'Unknown';
+    }
+  }
+
   static Future<String> _fetchCityName(
     double latitude,
     double longitude,
@@ -69,18 +90,19 @@ class LocationApiService {
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) {
-        _cityCache[key] = 'Unknown';
-        return 'Unknown';
+        return await _resolveCityLocally(latitude, longitude);
       }
 
       final data = jsonDecode(response.body);
       final city = (data['city'] ?? 'Unknown').toString().trim();
-      final result = city.isEmpty ? 'Unknown' : city;
-      _cityCache[key] = result;
-      return result;
+      if (city.isNotEmpty && city != 'Unknown') {
+        _cityCache[key] = city;
+        return city;
+      }
+
+      return await _resolveCityLocally(latitude, longitude);
     } catch (_) {
-      _cityCache[key] = 'Unknown';
-      return 'Unknown';
+      return await _resolveCityLocally(latitude, longitude);
     }
   }
 

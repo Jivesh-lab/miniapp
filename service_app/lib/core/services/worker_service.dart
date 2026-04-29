@@ -1,10 +1,11 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
 import '../models/worker_model.dart';
 import 'api_service.dart';
+import 'network_service.dart';
 
 Map<String, String> buildWorkerQueryParams({
   Object? sort,
@@ -134,6 +135,9 @@ class WorkerService {
     int limit = 1000,
   }) async {
     try {
+      if (!await NetworkService.hasInternetConnection()) {
+        throw Exception('Please check your internet connection');
+      }
       final query = buildWorkerQueryParams(
         q: q,
         rating: rating,
@@ -189,6 +193,9 @@ class WorkerService {
     double? userLongitude,
   }) async {
     try {
+      if (!await NetworkService.hasInternetConnection()) {
+        throw Exception('Please check your internet connection');
+      }
       final query = buildWorkerQueryParams(
         sort: sort,
         q: q,
@@ -324,3 +331,4 @@ class WorkerService {
     }
   }
 }
+

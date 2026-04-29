@@ -6,6 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/services/api_exception.dart';
 import '../../core/services/location_api_service.dart';
 import '../../core/services/location_permission_handler.dart';
+import '../../core/services/network_service.dart';
 import '../../core/services/service_service.dart';
 import '../../core/utils/error_message_helper.dart';
 import '../../core/widgets/category_card.dart';
@@ -13,6 +14,7 @@ import '../../core/widgets/responsive_layout.dart';
 import '../../core/widgets/search_bar_widget.dart';
 import '../worker/worker_list_screen.dart';
 import '../my_bookings/my_bookings_screen.dart';
+import '../no_internet_screen.dart';
 import '../profie_screen.dart/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -22,7 +24,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _selectedNavIndex = 0;
   final ServiceService _serviceService = ServiceService();
   bool _isLoadingServices = true;
@@ -34,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserData();
       _fetchServices();
@@ -41,9 +44,20 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _fetchLocation();
+    }
+  }
+
   // ΓöÇΓöÇΓöÇ LOCATION LOGIC (FIX #1) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   Future<void> _fetchLocation() async {
     try {
+      if (mounted) {
+        setState(() => _userLocation = 'Fetching location...');
+      }
+
       // Step 1: Check if location services are enabled
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
@@ -103,14 +117,47 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
 
       if (city != 'Unknown' && city.trim().isNotEmpty) {
-        setState(() => _userLocation = '≡ƒôì $city');
+        setState(() => _userLocation = city.trim());
       } else {
-        setState(() => _userLocation = 'Location not found');
+        setState(() => _userLocation = 'Location unavailable');
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _userLocation = 'Location not found');
+      setState(() => _userLocation = 'Location unavailable');
     }
+  }
+
+  Future<void> _showLocationRequiredDialog(String message) async {
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Location Required'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                await LocationPermissionHandler.openLocationSettings();
+              },
+              child: const Text('Open Settings'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   Future<void> _loadUserData() async {
@@ -208,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const SizedBox(height: 20),
                 
-                // ≡ƒÄ» USER GREETING SECTION
+                // USER GREETING SECTION
                 _buildGreetingSection(),
                 
                 const SizedBox(height: 28),
@@ -254,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// ≡ƒÄ» Greeting section with user name and location
+  /// Greeting section with user name and location
   Widget _buildGreetingSection() {
     final greeting = _getTimeBasedGreeting();
     
@@ -299,7 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 TextSpan(
-                  text: ' ≡ƒæï',
+                  text: ' 👋',
                   style: GoogleFonts.spaceGrotesk(fontSize: 24),
                 ),
               ],
@@ -615,11 +662,21 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _navigateToWorkerList(
+  Future<void> _navigateToWorkerList(
     BuildContext context,
     String serviceId,
     String serviceName,
-  ) {
+  ) async {
+    final hasInternet = await NetworkService.hasInternetConnection();
+    if (!hasInternet) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please check your internet connection')),
+      );
+      Navigator.pushNamed(context, '/no-internet');
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -629,4 +686,5 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
 

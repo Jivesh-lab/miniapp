@@ -18,7 +18,8 @@ class WorkerDetailScreen extends StatefulWidget {
   State<WorkerDetailScreen> createState() => _WorkerDetailScreenState();
 }
 
-class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
+class _WorkerDetailScreenState extends State<WorkerDetailScreen>
+    with WidgetsBindingObserver {
   bool _isFavorite = false;
   final WorkerService _workerService = WorkerService();
   final UserService _userService = UserService();
@@ -32,7 +33,21 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadLocationAndWorker();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadLocationAndWorker();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   Future<void> _loadLocationAndWorker() async {

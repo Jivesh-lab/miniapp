@@ -15,7 +15,7 @@ class WorkerProfileCompletionScreen extends StatefulWidget {
 }
 
 class _WorkerProfileCompletionScreenState
-    extends State<WorkerProfileCompletionScreen> {
+    extends State<WorkerProfileCompletionScreen> with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
   final _priceController = TextEditingController();
   final _locationController = TextEditingController();
@@ -33,11 +33,20 @@ class _WorkerProfileCompletionScreenState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadData();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadData();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _priceController.dispose();
     _locationController.dispose();
     _skillsController.dispose();

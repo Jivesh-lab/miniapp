@@ -1,12 +1,12 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import '../../widgets/no_internet_screen.dart';
+import '../../features/no_internet_screen.dart';
 
 class ConnectivityService {
   ConnectivityService._();
   static final Connectivity _connectivity = Connectivity();
 
-  static Stream<ConnectivityResult> get onConnectivityChanged =>
+  static Stream<List<ConnectivityResult>> get onConnectivityChanged =>
       _connectivity.onConnectivityChanged;
 
   /// Returns true for wifi or mobile connection, false otherwise.
@@ -24,13 +24,7 @@ class ConnectivityService {
 
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => NoInternetScreen(
-          onRetry: () async {
-            if (await checkConnected()) {
-              Navigator.of(context).pop();
-            }
-          },
-        ),
+        builder: (_) => const NoInternetScreen(),
         fullscreenDialog: true,
       ),
     );
