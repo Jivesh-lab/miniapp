@@ -97,137 +97,110 @@ Each booking contains:
 - Comments
 
 Supported booking states:
+authentication, worker discovery, location functionality, booking workflows, and real-time backend infrastructure.
 
-```text
-Pending → Confirmed → In Progress → Completed
+1. Clone the Repository
+git clone https://github.com/Jivesh-lab/miniapp.git
 
-Additional states include:
+cd miniapp
+2. Configure the Backend
+cd backend
+npm install
 
-Rejected
-Cancelled
+Create a .env file:
 
-The database also enforces worker/date/time uniqueness to prevent duplicate bookings for the same worker and time slot.
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+FRONTEND_URL=http://localhost:3000
 
-⚡ Real-Time Communication
+Add any additional environment variables required by the authentication, email, location, or deployment configuration.
 
-The backend integrates Socket.IO to support real-time application events.
+3. Start the Backend
+npm start
 
-This provides a foundation for:
+The backend will start using the server entry point configured in package.json.
 
-Booking updates
-Worker status changes
-Availability updates
-User/worker synchronization
-🛠️ Tech Stack
-Mobile Application
-Technology	Purpose
-Flutter	Cross-platform mobile application
-Dart	Application development
-Google Fonts	Typography
-HTTP	REST API communication
-Socket.IO Client	Real-time communication
-Geolocator	Device location
-Geocoding	Location/address conversion
-Shared Preferences	Local persistence
-Connectivity Plus	Network connectivity detection
-WebView	Web content integration
-URL Launcher	External URL handling
+For development, you can use your preferred Node.js development workflow.
 
-The Flutter project currently targets Dart SDK ^3.11.4.
+4. Seed Workers
 
-Backend
-Technology	Purpose
-Node.js	Server runtime
-Express.js	REST API
-MongoDB	Database
-Mongoose	MongoDB ODM
-JWT	Authentication
-bcryptjs	Password hashing
-Socket.IO	Real-time communication
-Nodemailer	Email communication
-CORS	Cross-origin configuration
-dotenv	Environment configuration
+The repository includes a worker seeding script.
 
-The backend uses ES modules and separates routes for authentication, workers, bookings, services, users, location, and geocoding.
+npm run seed:workers
 
-🏗️ Architecture
-┌───────────────────────────────┐
-│       Flutter Mobile App      │
-│                               │
-│  User Experience              │
-│  Worker Experience            │
-│  Location Services            │
-│  Booking Management            │
-└───────────────┬───────────────┘
-                │
-          REST API / Socket.IO
-                │
-                ▼
-┌───────────────────────────────┐
-│       Node.js + Express       │
-│                               │
-│  Authentication               │
-│  Users                        │
-│  Workers                      │
-│  Services                     │
-│  Bookings                     │
-│  Location / Geocoding         │
-└───────────────┬───────────────┘
-                │
-                ▼
-┌───────────────────────────────┐
-│            MongoDB            │
-│                               │
-│  Users • Workers • Services   │
-│  Bookings • OTP • Blacklist   │
-└───────────────────────────────┘
-📂 Project Structure
-miniapp/
-│
-├── backend/
-│   ├── src/
-│   │   ├── controllers/
-│   │   ├── middleware/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   └── services/
-│   ├── server.js
-│   └── package.json
-│
-├── service_app/
-│   ├── lib/
-│   │   ├── core/
-│   │   ├── features/
-│   │   ├── models/
-│   │   ├── screens/
-│   │   ├── services/
-│   │   └── widgets/
-│   └── pubspec.yaml
-│
-└── README.md
-🔄 Booking Flow
+This can be used to populate development data for testing worker discovery and booking flows.
+
+5. Run the Flutter Application
+
+Open a new terminal:
+
+cd service_app
+
+flutter pub get
+
+flutter run
+
+To check the Flutter environment:
+
+flutter doctor
+Configuration
+
+The mobile application communicates with the backend through HTTP and Socket.IO.
+
+For local development, configure the API/server address according to the environment in which the Flutter application is running.
+
+For a physical Android device, remember that:
+
+localhost
+
+refers to the device itself, not your development computer.
+
+Use the appropriate machine/network address or deployed backend URL when testing on a physical device.
+
+Booking Flow
+User
+ │
+ ▼
 Select Service
-      ↓
+ │
+ ▼
 Discover Workers
-      ↓
+ │
+ ▼
 View Worker Profile
-      ↓
+ │
+ ├── Rating
+ ├── Skills
+ ├── Price
+ ├── Location
+ └── Availability
+ │
+ ▼
 Select Date & Time
-      ↓
+ │
+ ▼
 Enter Service Address
-      ↓
+ │
+ ▼
 Create Booking
-      ↓
+ │
+ ▼
 Worker Receives Request
-      ↓
-Accept / Reject
-      ↓
-In Progress
-      ↓
-Completed
-      ↓
-Rating & Review
-👤 User Flow
+ │
+ ├── Reject
+ │
+ └── Confirm
+       │
+       ▼
+   In Progress
+       │
+       ▼
+    Completed
+       │
+       ▼
+ Rating & Review
+User Flow
 Launch
   ↓
 Splash Screen
@@ -249,100 +222,111 @@ Authentication
    My Bookings
         ↓
    Rate / Review
-🧑‍🔧 Worker Flow
+Worker Flow
 Worker Login
-      ↓
+     ↓
 Profile Completion
-      ↓
+     ↓
 Worker Dashboard
-      ↓
+     ↓
 Booking Requests
-      ├── Accept
-      └── Reject
-            ↓
-      Booking Details
-            ↓
-      Update Status
-            ↓
-        Completed
-🔐 Security
+     ├── Accept
+     └── Reject
+          ↓
+    Booking Details
+          ↓
+   Update Status
+          ↓
+      Completed
+Screens & Modules
+
+The Flutter application includes dedicated screens/modules for:
+
+Splash screen
+Login
+Registration
+Home
+Worker listing
+Worker details
+Booking
+My bookings
+User profile
+Worker dashboard
+Worker bookings
+Worker booking details
+Worker profile
+Worker profile completion
+No-internet handling
+
+These routes are registered directly in the application's navigation configuration.
+
+Development Highlights
+
+This project demonstrates practical full-stack application concepts including:
+
+Cross-platform mobile development
+REST API architecture
 JWT-based authentication
 Role-based authorization
-Password hashing with bcrypt
-Protected API routes
-Token blacklist support
-Environment-based configuration
-CORS protection
+MongoDB data modeling
+Geospatial indexing
+Location services
+Booking and scheduling logic
+Real-time communication
+Password security
 Centralized error handling
+Network connectivity handling
+Modular Flutter architecture
+Backend route/controller separation
+Roadmap
 
-Security: Never commit database credentials, JWT secrets, email credentials, or other sensitive configuration to the repository.
+Potential future improvements include:
 
-⚙️ Getting Started
-Prerequisites
-Flutter SDK
-Dart SDK
-Node.js
-npm
-MongoDB or MongoDB Atlas
-Android Studio / Xcode
-Git
-1. Clone the Repository
-git clone https://github.com/Jivesh-lab/miniapp.git
-cd miniapp
-2. Configure the Backend
-cd backend
-npm install
+Push notifications
 
-Create a .env file:
+Advanced worker search and filtering
 
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret
-FRONTEND_URL=http://localhost:3000
+Distance-based worker ranking
 
-Add any additional environment variables required by your deployment or external services.
+Integrated maps
 
-3. Start the Backend
-npm start
-4. Seed Workers
-npm run seed:workers
+Online payments
 
-This populates development worker data for testing worker discovery and booking flows.
+Worker earnings dashboard
 
-5. Run the Flutter Application
+Service completion verification
 
-Open a new terminal:
+Chat between users and workers
 
-cd service_app
-flutter pub get
-flutter run
+Image/document uploads
 
-Check the Flutter environment with:
+Admin dashboard
 
-flutter doctor
-📱 Screens & Modules
+Worker verification
 
-The Flutter application includes:
+Analytics and reporting
 
-Splash Screen
-Login / Registration
-Home
-Worker Listing
-Worker Details
-Booking
-My Bookings
-User Profile
-Worker Dashboard
-Worker Bookings
-Worker Booking Details
-Worker Profile
-Worker Profile Completion
-No-Internet Screen
-📸 Screenshots
+Automated testing and CI/CD
 
-Add application screenshots here to showcase the main user and worker experiences.
+Production monitoring and logging
+
+Screenshots
+
+Add application screenshots here to showcase the user and worker experiences.
 
 Recommended screenshots:
+
+Login / Sign Up
+Home / Service Categories
+Worker Listing
+Worker Details
+Booking Screen
+My Bookings
+Worker Dashboard
+Worker Booking Management
+Worker Profile
+
+Example:
 
 docs/
 └── screenshots/
@@ -353,73 +337,35 @@ docs/
     ├── booking.png
     ├── my-bookings.png
     └── worker-dashboard.png
-💡 Development Highlights
+Project Status
 
-This project demonstrates practical full-stack development concepts including:
+Status: Active Development
 
-Cross-platform mobile development
-REST API architecture
-JWT authentication
-Role-based authorization
-MongoDB data modeling
-Geospatial indexing
-Location services
-Booking and scheduling
-Real-time communication
-Password security
-Centralized error handling
-Network connectivity handling
-Modular Flutter architecture
-Backend route/controller separation
-🗺️ Roadmap
- Push notifications
- Advanced worker search and filtering
- Distance-based worker ranking
- Integrated maps
- Online payments
- Worker earnings dashboard
- Service completion verification
- User-worker chat
- Image/document uploads
- Admin dashboard
- Worker verification
- Analytics and reporting
- Automated testing
- CI/CD
- Production monitoring
-📌 Project Status
+The project currently contains a functional full-stack foundation with Flutter mobile clients, REST APIs, MongoDB persistence, authentication, worker discovery, location functionality, booking workflows, and real-time backend infrastructure.
 
-Active Development
-
-The project currently provides a full-stack foundation for a location-aware local service marketplace with Flutter mobile clients, REST APIs, MongoDB persistence, authentication, worker discovery, location functionality, booking workflows, and real-time backend infrastructure.
-
-🤝 Contributing
+Contributing
 
 Contributions, suggestions, and improvements are welcome.
 
-Fork the repository.
-Create a feature branch:
+Fork the repository
+Create a feature branch
 git checkout -b feature/your-feature
-Commit your changes:
+Commit your changes
 git commit -m "feat: add your feature"
-Push the branch:
+Push the branch
 git push origin feature/your-feature
-Open a Pull Request.
+Open a Pull Request
 
-Please keep pull requests focused and test affected functionality before submitting.
+Please keep pull requests focused, clearly describe the change, and test the affected functionality before submitting.
 
-📄 License
+License
 
 This project is currently intended for educational and development purposes.
 
-If you plan to distribute it as open-source software, add an appropriate license such as MIT or Apache-2.0.
+Add an explicit open-source license such as MIT, Apache-2.0, or another appropriate license before presenting the repository as an officially licensed open-source project.
 
-👨‍💻 Author
+Author
 
 Jivesh-lab
 
-GitHub
-
-<p align="center"> Built with Flutter • Node.js • Express.js • MongoDB • Socket.IO </p> ```
-
-This is the version I would actually put in the root README.md. It keeps your technical details but makes the page much easier for a recruiter to scan
+GitHub: Jivesh-lab
