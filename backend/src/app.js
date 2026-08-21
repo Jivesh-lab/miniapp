@@ -24,11 +24,22 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
+    // Allow non-browser origins (mobile apps, curl) when origin is undefined
+    if (!origin) {
+      return callback(null, true);
     }
+
+    const isAllowedExplicit = allowedOrigins.includes(origin);
+    const isLocalhostLike = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    const isLanIp = /^https?:\/\/192\.168\./.test(origin);
+    const isEmulatorHost = origin.includes('10.0.2.2');
+    const isFrontendEnv = process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL;
+
+    if (isAllowedExplicit || isLocalhostLike || isLanIp || isEmulatorHost || isFrontendEnv) {
+      return callback(null, true);
+    }
+
+    callback(new Error("Not allowed by CORS"));
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

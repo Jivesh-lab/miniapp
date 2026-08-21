@@ -1,12 +1,24 @@
 import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
 
 class ApiConfig {
   // ============================================
   // 🌍 ENVIRONMENT URLS
   // ============================================
   
-  // Local development (your existing IP)
-  static const String _localBaseUrl = 'http://192.168.0.104:3000';
+  // Local development (your existing IP). Use Android emulator host when running on Android.
+  static String get _localBaseUrl {
+    try {
+      if (Platform.isAndroid) {
+        // Android emulator maps host loopback to 10.0.2.2
+        return 'http://10.0.2.2:3000';
+      }
+    } catch (_) {
+      // Platform may be unsupported in some environments (web), fallthrough
+    }
+
+    return 'http://192.168.0.104:3000';
+  }
   
   // Production (Render)
   static const String _productionBaseUrl = 'https://miniapp-euip.onrender.com';

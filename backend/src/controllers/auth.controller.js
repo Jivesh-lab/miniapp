@@ -83,6 +83,8 @@ const isProfileComplete = (worker) => {
 };
 
 export const registerUser = async (req, res) => {
+  let createdUser = null;
+
   try {
     const { name, phone, email, password } = req.body ?? {};
 
@@ -126,7 +128,7 @@ export const registerUser = async (req, res) => {
 
     const passwordHash = await bcrypt.hash(String(password), 10);
 
-    const user = await User.create({
+    createdUser = await User.create({
       name: normalizedName,
       phone: normalizedPhone,
       email: normalizedEmail,
@@ -139,12 +141,12 @@ export const registerUser = async (req, res) => {
     await EmailOtp.create({
       email: normalizedEmail,
       purpose: "register",
-      userId: user._id,
+      userId: createdUser._id,
       otpHash: hashOtp(otp),
       expiresAt: new Date(Date.now() + 5 * 60 * 1000),
     });
 
-    await sendOtpEmail(user.email, otp);
+    await sendOtpEmail(createdUser.email, otp);
 
     return res.status(201).json({
       success: true,
@@ -154,6 +156,13 @@ export const registerUser = async (req, res) => {
       role: "user",
     });
   } catch (error) {
+    if (createdUser?._id) {
+      await Promise.allSettled([
+        EmailOtp.deleteMany({ email: normalizeEmail(req.body?.email), purpose: "register" }),
+        User.deleteOne({ _id: createdUser._id }),
+      ]);
+    }
+
     return res.status(500).json({
       success: false,
       message: "Failed to register user",
