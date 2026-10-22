@@ -6,10 +6,7 @@ class ServiceItem {
   final String id;
   final String name;
 
-  ServiceItem({
-    required this.id,
-    required this.name,
-  });
+  ServiceItem({required this.id, required this.name});
 
   factory ServiceItem.fromJson(Map<String, dynamic> json) {
     return ServiceItem(
@@ -19,17 +16,17 @@ class ServiceItem {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-    };
+    return {'id': id, 'name': name};
   }
 }
 
 class ServiceService {
   Future<List<ServiceItem>> getServices() async {
     try {
-      final response = await ApiService.getJson('/services', useAuthHeaders: true);
+      final response = await ApiService.getJson(
+        '/services',
+        useAuthHeaders: true,
+      );
       final body = await ApiService.parseAuthenticatedResponse(
         response,
         clearSession: ApiService.clearUserSession,

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
@@ -73,7 +73,10 @@ String? _parseTextParam(Object? value) {
 
 String? _parseSortParam(Object? value) {
   final text = _parseTextParam(value)?.toLowerCase();
-  if (text == 'rating' || text == 'price' || text == '-rating' || text == '-price') {
+  if (text == 'rating' ||
+      text == 'price' ||
+      text == '-rating' ||
+      text == '-price') {
     return text;
   }
   return null;
@@ -116,10 +119,7 @@ class WorkerListResponse {
   final List<WorkerModel> workers;
   final bool isFallback;
 
-  WorkerListResponse({
-    required this.workers,
-    this.isFallback = false,
-  });
+  WorkerListResponse({required this.workers, this.isFallback = false});
 }
 
 class WorkerService {
@@ -166,7 +166,7 @@ class WorkerService {
       );
       final data = (body['data'] as List<dynamic>? ?? <dynamic>[])
           .cast<Map<String, dynamic>>();
-      
+
       final isFallback = body['isFallback'] == true;
 
       return WorkerListResponse(
@@ -225,7 +225,9 @@ class WorkerService {
         );
       }
 
-      final path = normalizedServiceId.isEmpty ? '/workers/search' : '/workers/$normalizedServiceId';
+      final path = normalizedServiceId.isEmpty
+          ? '/workers/search'
+          : '/workers/$normalizedServiceId';
 
       final response = await http
           .get(
@@ -241,7 +243,7 @@ class WorkerService {
       );
       final data = (body['data'] as List<dynamic>? ?? <dynamic>[])
           .cast<Map<String, dynamic>>();
-      
+
       final isFallback = body['isFallback'] == true;
 
       return WorkerListResponse(
@@ -275,10 +277,7 @@ class WorkerService {
 
       final response = await http
           .get(
-            ApiService.uri(
-              '/workers/detail/$id',
-              query.isEmpty ? null : query,
-            ),
+            ApiService.uri('/workers/detail/$id', query.isEmpty ? null : query),
             headers: await ApiService.authHeaders(),
           )
           .timeout(ApiService.requestTimeout);
@@ -331,4 +330,3 @@ class WorkerService {
     }
   }
 }
-

@@ -48,7 +48,8 @@ class LocationService {
 
   /// Get current user location
   /// Returns {latitude, longitude} or null if unable to get location
-  static Future<({double latitude, double longitude})?> getUserLocation() async {
+  static Future<({double latitude, double longitude})?>
+  getUserLocation() async {
     try {
       final position = await _getPosition();
       if (position == null) {

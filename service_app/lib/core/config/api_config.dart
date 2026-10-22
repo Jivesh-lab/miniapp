@@ -5,7 +5,7 @@ class ApiConfig {
   // ============================================
   // 🌍 ENVIRONMENT URLS
   // ============================================
-  
+
   // Local development (your existing IP). Use Android emulator host when running on Android.
   static String get _localBaseUrl {
     try {
@@ -19,24 +19,24 @@ class ApiConfig {
 
     return 'http://192.168.0.104:3000';
   }
-  
+
   // Production (Render)
   static const String _productionBaseUrl = 'https://miniapp-euip.onrender.com';
-  
+
   // ============================================
   // ⚙️ CONFIGURATION
   // ============================================
-  
+
   // 🟢 AUTO-DETECT: Debug mode = Local, Release mode = Production
   // NO NEED TO CHANGE! Just build APK and it will automatically use Render.
   static bool get isProduction {
-    return !kDebugMode;  // true if APK (release), false if running locally (debug)
+    return !kDebugMode; // true if APK (release), false if running locally (debug)
   }
-  
+
   // ============================================
   // EXISTING OVERRIDE MECHANISM (unchanged)
   // ============================================
-  
+
   static const String _overrideApiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: '',
@@ -49,7 +49,7 @@ class ApiConfig {
   // ============================================
   // 📡 GET SOCKET URL
   // ============================================
-  
+
   static String get socketUrl {
     if (_overrideSocketBaseUrl.isNotEmpty) {
       return _normalizeBase(_overrideSocketBaseUrl);
@@ -69,7 +69,7 @@ class ApiConfig {
   // ============================================
   // 🔗 GET API BASE URL (main getter)
   // ============================================
-  
+
   static String get baseUrl {
     if (_overrideApiBaseUrl.isNotEmpty) {
       final normalized = _normalizeBase(_overrideApiBaseUrl);
@@ -85,7 +85,7 @@ class ApiConfig {
   // ============================================
   // 🛠️ HELPER METHODS
   // ============================================
-  
+
   static String _normalizeBase(String url) {
     var normalized = url.trim();
     while (normalized.endsWith('/')) {
@@ -99,6 +99,8 @@ class ApiConfig {
     if (_overrideApiBaseUrl.isNotEmpty) {
       return 'Override: $_overrideApiBaseUrl';
     }
-    return isProduction ? 'Production (Render APK)' : 'Local Development (Debug)';
+    return isProduction
+        ? 'Production (Render APK)'
+        : 'Local Development (Debug)';
   }
 }

@@ -71,10 +71,7 @@ class BookingCard extends StatelessWidget {
               ),
             ),
             // Divider
-            Container(
-              height: 1,
-              color: Colors.grey.shade200,
-            ),
+            Container(height: 1, color: Colors.grey.shade200),
             // Details
             Padding(
               padding: const EdgeInsets.all(14),
@@ -279,7 +276,7 @@ class BookingCard extends StatelessWidget {
         'Sep',
         'Oct',
         'Nov',
-        'Dec'
+        'Dec',
       ];
       return '${date.day} ${months[date.month - 1]}, ${date.year}';
     }

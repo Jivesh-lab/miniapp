@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -61,15 +61,13 @@ class ApiService {
   }
 
   static Map<String, String> get headers => {
-        'Content-Type': 'application/json',
-      };
+    'Content-Type': 'application/json',
+  };
 
   static Future<Map<String, String>> authHeaders() async {
     final token = await _readToken();
 
-    final map = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final map = <String, String>{'Content-Type': 'application/json'};
 
     if (token != null && token.isNotEmpty) {
       map['Authorization'] = 'Bearer $token';
@@ -126,7 +124,10 @@ class ApiService {
     }
   }
 
-  static Future<void> saveUserSession({required String token, required String userId}) async {
+  static Future<void> saveUserSession({
+    required String token,
+    required String userId,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userTokenKey, token);
     // Backward compatibility for screens still reading auth_token.
@@ -134,14 +135,14 @@ class ApiService {
     await prefs.setString(_userIdKey, userId);
   }
 
-  static Future<void> saveWorkerSession({required String token, required String workerId}) async {
+  static Future<void> saveWorkerSession({
+    required String token,
+    required String workerId,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _workerSessionKey,
-      jsonEncode({
-        'workerId': workerId,
-        'token': token,
-      }),
+      jsonEncode({'workerId': workerId, 'token': token}),
     );
   }
 
@@ -223,7 +224,8 @@ class ApiService {
     if (response.statusCode == 401 || response.statusCode == 403) {
       await clearSession();
       throw ApiException(
-        message: body['message']?.toString() ?? 'Session expired or invalid token',
+        message:
+            body['message']?.toString() ?? 'Session expired or invalid token',
         statusCode: response.statusCode,
       );
     }
@@ -242,7 +244,10 @@ class ApiService {
     final normalizedRole = role.toLowerCase();
 
     if (normalizedRole != 'user' && normalizedRole != 'worker') {
-      throw const ApiException(message: 'Invalid role selected', statusCode: 400);
+      throw const ApiException(
+        message: 'Invalid role selected',
+        statusCode: 400,
+      );
     }
 
     final response = await postJson('/auth/login', {
@@ -256,8 +261,11 @@ class ApiService {
       return parsed;
     }
 
-    final data = (parsed['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
-    final responseRole = (parsed['role'] ?? data['role'] ?? normalizedRole).toString().toLowerCase();
+    final data =
+        (parsed['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
+    final responseRole = (parsed['role'] ?? data['role'] ?? normalizedRole)
+        .toString()
+        .toLowerCase();
     final token = (parsed['token'] ?? data['token'] ?? '').toString();
     final id = (parsed['id'] ?? data['id'] ?? data['_id'] ?? '').toString();
     final name = (parsed['name'] ?? data['name'] ?? '').toString();
@@ -293,8 +301,11 @@ class ApiService {
     });
 
     final parsed = parseResponse(response);
-    final data = (parsed['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
-    final responseRole = (parsed['role'] ?? data['role'] ?? '').toString().toLowerCase();
+    final data =
+        (parsed['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
+    final responseRole = (parsed['role'] ?? data['role'] ?? '')
+        .toString()
+        .toLowerCase();
     final token = (parsed['token'] ?? data['token'] ?? '').toString();
     final id = (parsed['id'] ?? data['id'] ?? data['_id'] ?? '').toString();
 
@@ -356,7 +367,9 @@ class ApiService {
     Map<String, dynamic> payload, {
     bool useAuthHeaders = false,
   }) async {
-    final requestHeaders = useAuthHeaders ? await _requiredAuthHeaders() : headers;
+    final requestHeaders = useAuthHeaders
+        ? await _requiredAuthHeaders()
+        : headers;
 
     return _executeWithRetry(
       () => http.post(
@@ -372,13 +385,12 @@ class ApiService {
     Map<String, String>? query,
     bool useAuthHeaders = false,
   }) async {
-    final requestHeaders = useAuthHeaders ? await _requiredAuthHeaders() : headers;
+    final requestHeaders = useAuthHeaders
+        ? await _requiredAuthHeaders()
+        : headers;
 
     return _executeWithRetry(
-      () => http.get(
-        uri(path, query),
-        headers: requestHeaders,
-      ),
+      () => http.get(uri(path, query), headers: requestHeaders),
     );
   }
 
@@ -387,7 +399,9 @@ class ApiService {
     Map<String, dynamic> payload, {
     bool useAuthHeaders = false,
   }) async {
-    final requestHeaders = useAuthHeaders ? await _requiredAuthHeaders() : headers;
+    final requestHeaders = useAuthHeaders
+        ? await _requiredAuthHeaders()
+        : headers;
 
     return _executeWithRetry(
       () => http.put(
@@ -403,7 +417,9 @@ class ApiService {
     Map<String, dynamic> payload, {
     bool useAuthHeaders = false,
   }) async {
-    final requestHeaders = useAuthHeaders ? await _requiredAuthHeaders() : headers;
+    final requestHeaders = useAuthHeaders
+        ? await _requiredAuthHeaders()
+        : headers;
 
     return _executeWithRetry(
       () => http.patch(
@@ -414,4 +430,3 @@ class ApiService {
     );
   }
 }
-

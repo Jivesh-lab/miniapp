@@ -57,20 +57,27 @@ class BookingModel {
   // Convert from JSON
   factory BookingModel.fromJson(Map<String, dynamic> json) {
     final workerJson = json['workerId'];
-    final workerData = workerJson is Map<String, dynamic> ? workerJson : <String, dynamic>{};
-    final rawDate = (json['date'] ?? DateTime.now().toIso8601String()).toString();
+    final workerData = workerJson is Map<String, dynamic>
+        ? workerJson
+        : <String, dynamic>{};
+    final rawDate = (json['date'] ?? DateTime.now().toIso8601String())
+        .toString();
 
     return BookingModel(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
-      workerId: workerData['_id']?.toString() ?? (json['workerId'] ?? '').toString(),
-      workerName: (json['workerName'] ?? workerData['name'] ?? 'Worker').toString(),
+      workerId:
+          workerData['_id']?.toString() ?? (json['workerId'] ?? '').toString(),
+      workerName: (json['workerName'] ?? workerData['name'] ?? 'Worker')
+          .toString(),
       serviceType: (json['serviceType'] ?? 'Service').toString(),
       date: DateTime.tryParse(rawDate) ?? DateTime.now(),
       timeSlot: (json['timeSlot'] ?? json['time'] ?? '').toString(),
       address: (json['address'] ?? '').toString(),
       status: _parseStatus(json['status'] as String),
       isRated: (json['isRated'] as bool?) ?? false,
-      createdAt: DateTime.tryParse((json['createdAt'] ?? rawDate).toString()) ?? DateTime.now(),
+      createdAt:
+          DateTime.tryParse((json['createdAt'] ?? rawDate).toString()) ??
+          DateTime.now(),
       completedAt: json['completedAt'] != null
           ? DateTime.parse(json['completedAt'] as String)
           : null,

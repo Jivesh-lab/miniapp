@@ -9,10 +9,7 @@ import '../../core/utils/error_message_helper.dart';
 class BookingScreen extends StatefulWidget {
   final WorkerModel worker;
 
-  const BookingScreen({
-    super.key,
-    required this.worker,
-  });
+  const BookingScreen({super.key, required this.worker});
 
   @override
   State<BookingScreen> createState() => _BookingScreenState();
@@ -72,12 +69,7 @@ class _BookingScreenState extends State<BookingScreen> {
         body: Stack(
           children: [
             SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                padding,
-                16,
-                padding,
-                120,
-              ),
+              padding: EdgeInsets.fromLTRB(padding, 16, padding, 120),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -202,7 +194,11 @@ class _BookingScreenState extends State<BookingScreen> {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.star_rounded, color: Colors.amber, size: 16),
+                    const Icon(
+                      Icons.star_rounded,
+                      color: Colors.amber,
+                      size: 16,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '${widget.worker.rating}',
@@ -294,11 +290,7 @@ class _BookingScreenState extends State<BookingScreen> {
                     ),
                   ],
                 ),
-                Icon(
-                  Icons.calendar_today,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
+                Icon(Icons.calendar_today, color: AppColors.primary, size: 20),
               ],
             ),
           ),
@@ -321,7 +313,10 @@ class _BookingScreenState extends State<BookingScreen> {
             style: GoogleFonts.inter(color: Colors.red.shade600),
           ),
           const SizedBox(height: 8),
-          ElevatedButton(onPressed: _loadSlotsForDate, child: const Text('Retry')),
+          ElevatedButton(
+            onPressed: _loadSlotsForDate,
+            child: const Text('Retry'),
+          ),
         ],
       );
     }
@@ -371,15 +366,15 @@ class _BookingScreenState extends State<BookingScreen> {
                     color: isBooked
                         ? Colors.grey.shade200
                         : isSelected
-                            ? AppColors.primary
-                            : Colors.white,
+                        ? AppColors.primary
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isBooked
                           ? Colors.grey.shade300
                           : isSelected
-                              ? AppColors.primary
-                              : Colors.grey.shade200,
+                          ? AppColors.primary
+                          : Colors.grey.shade200,
                     ),
                   ),
                   child: Text(
@@ -390,8 +385,8 @@ class _BookingScreenState extends State<BookingScreen> {
                       color: isBooked
                           ? Colors.grey.shade500
                           : isSelected
-                              ? Colors.white
-                              : const Color(0xFF1F2937),
+                          ? Colors.white
+                          : const Color(0xFF1F2937),
                     ),
                   ),
                 ),
@@ -521,12 +516,16 @@ class _BookingScreenState extends State<BookingScreen> {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : Icon(
                               Icons.check_circle_outline,
-                              color: Colors.white.withOpacity(isFormValid ? 1 : 0.5),
+                              color: Colors.white.withOpacity(
+                                isFormValid ? 1 : 0.5,
+                              ),
                               size: 20,
                             ),
                       const SizedBox(width: 8),
@@ -535,7 +534,9 @@ class _BookingScreenState extends State<BookingScreen> {
                         style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white.withOpacity(isFormValid ? 1 : 0.5),
+                          color: Colors.white.withOpacity(
+                            isFormValid ? 1 : 0.5,
+                          ),
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -600,13 +601,19 @@ class _BookingScreenState extends State<BookingScreen> {
 
       setState(() {
         _allSlots = List<String>.from(
-          (slots['allSlots'] ?? slots['availableSlots'] ?? <dynamic>[]) as List<dynamic>,
+          (slots['allSlots'] ?? slots['availableSlots'] ?? <dynamic>[])
+              as List<dynamic>,
         );
-        _availableSlots = List<String>.from((slots['availableSlots'] ?? <dynamic>[]) as List<dynamic>);
-        _bookedSlots = List<String>.from((slots['bookedSlots'] ?? <dynamic>[]) as List<dynamic>);
+        _availableSlots = List<String>.from(
+          (slots['availableSlots'] ?? <dynamic>[]) as List<dynamic>,
+        );
+        _bookedSlots = List<String>.from(
+          (slots['bookedSlots'] ?? <dynamic>[]) as List<dynamic>,
+        );
 
         // Ensure stale selections cannot be submitted.
-        if (_selectedTimeSlot != null && _bookedSlots.contains(_selectedTimeSlot)) {
+        if (_selectedTimeSlot != null &&
+            _bookedSlots.contains(_selectedTimeSlot)) {
           _selectedTimeSlot = null;
         }
         _isLoadingSlots = false;
@@ -641,7 +648,9 @@ class _BookingScreenState extends State<BookingScreen> {
 
       await _loadSlotsForDate();
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ErrorMessageHelper.showSnack(
+        context,
+
         SnackBar(
           content: Text(
             'Booking confirmed!',
@@ -649,7 +658,9 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
 
@@ -657,7 +668,9 @@ class _BookingScreenState extends State<BookingScreen> {
     } catch (e) {
       if (!mounted) return;
       final errorMessage = ErrorMessageHelper.booking(e);
-      ScaffoldMessenger.of(context).showSnackBar(
+      ErrorMessageHelper.showSnack(
+        context,
+
         SnackBar(
           content: Text(
             errorMessage,
@@ -665,7 +678,9 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     } finally {
@@ -688,7 +703,7 @@ class _BookingScreenState extends State<BookingScreen> {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     return months[month - 1];
   }

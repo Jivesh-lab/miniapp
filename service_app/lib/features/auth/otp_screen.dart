@@ -10,11 +10,7 @@ class OtpScreen extends StatefulWidget {
   final String identifier;
   final String role;
 
-  const OtpScreen({
-    super.key,
-    required this.identifier,
-    required this.role,
-  });
+  const OtpScreen({super.key, required this.identifier, required this.role});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -54,8 +50,12 @@ class _OtpScreenState extends State<OtpScreen> {
       final data = response['data'] is Map<String, dynamic>
           ? response['data'] as Map<String, dynamic>
           : <String, dynamic>{};
-      final role = (response['role'] ?? data['role'] ?? widget.role).toString().toLowerCase();
-      final profileComplete = response['profileComplete'] == true || data['profileComplete'] == true;
+      final role = (response['role'] ?? data['role'] ?? widget.role)
+          .toString()
+          .toLowerCase();
+      final profileComplete =
+          response['profileComplete'] == true ||
+          data['profileComplete'] == true;
 
       if (!await ConnectivityService.ensureConnectedOrShow(context)) {
         return;
@@ -158,7 +158,9 @@ class _OtpScreenState extends State<OtpScreen> {
                                   ? const SizedBox(
                                       width: 20,
                                       height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     )
                                   : const Text('Verify'),
                             ),
@@ -168,7 +170,9 @@ class _OtpScreenState extends State<OtpScreen> {
                             alignment: Alignment.center,
                             child: TextButton(
                               onPressed: () async {
-                                if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+                                if (!await ConnectivityService.ensureConnectedOrShow(
+                                  context,
+                                )) {
                                   return;
                                 }
                                 Navigator.pop(context);

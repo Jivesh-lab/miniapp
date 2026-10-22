@@ -39,7 +39,9 @@ class SocketService {
 
     final token = (userToken != null && userToken.isNotEmpty)
         ? userToken
-        : ((legacyToken != null && legacyToken.isNotEmpty) ? legacyToken : workerToken);
+        : ((legacyToken != null && legacyToken.isNotEmpty)
+              ? legacyToken
+              : workerToken);
 
     if (token == null) return;
 

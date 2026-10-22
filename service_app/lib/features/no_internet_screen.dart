@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import '../core/utils/error_message_helper.dart';
 
 import '../core/services/connectivity_service.dart';
 import '../core/services/app_api_client.dart';
@@ -28,7 +29,9 @@ class _NoInternetScreenState extends State<NoInternetScreen> {
       setState(() {
         _isRetrying = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
+      ErrorMessageHelper.showSnack(
+        context,
+
         const SnackBar(content: Text('Please check your internet connection')),
       );
       return;

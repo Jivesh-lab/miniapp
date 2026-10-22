@@ -10,23 +10,23 @@ import 'api_exception.dart';
 
 class ApiService {
   static String get baseUrl => ApiConfig.baseUrl;
-  
+
   // ============================================
   // ⏱️ TIMEOUT CONFIGURATION FOR RENDER
   // ============================================
   // Increased timeout for Render cold start (30 seconds for production, 15 for local)
   static Duration get requestTimeout {
-    return ApiConfig.isProduction 
-        ? const Duration(seconds: 30)  // Production: 30s for Render
+    return ApiConfig.isProduction
+        ? const Duration(seconds: 30) // Production: 30s for Render
         : const Duration(seconds: 15); // Local: 15s
   }
-  
+
   // ============================================
   // 🔄 RETRY CONFIGURATION
   // ============================================
   static const int maxRetries = 3;
   static const Duration retryDelay = Duration(milliseconds: 500);
-  
+
   static const String _legacyAuthTokenKey = 'auth_token';
   static const String _userTokenKey = 'user_token';
   static const String _userIdKey = 'user_id';
@@ -53,8 +53,8 @@ class ApiService {
   }
 
   static Map<String, String> get headers => {
-        'Content-Type': 'application/json',
-      };
+    'Content-Type': 'application/json',
+  };
 
   static Future<Map<String, String>> authHeaders() async {
     final prefs = await SharedPreferences.getInstance();
@@ -63,11 +63,11 @@ class ApiService {
     final workerToken = _extractWorkerToken(prefs.getString(_workerSessionKey));
     final token = (userToken != null && userToken.isNotEmpty)
         ? userToken
-        : ((legacyToken != null && legacyToken.isNotEmpty) ? legacyToken : workerToken);
+        : ((legacyToken != null && legacyToken.isNotEmpty)
+              ? legacyToken
+              : workerToken);
 
-    final map = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final map = <String, String>{'Content-Type': 'application/json'};
 
     if (token != null && token.isNotEmpty) {
       map['Authorization'] = 'Bearer $token';
@@ -79,7 +79,7 @@ class ApiService {
   // ============================================
   // 🔄 INTELLIGENT RETRY LOGIC FOR RENDER COLD START
   // ============================================
-  
+
   static Future<T> _retryRequest<T>(
     Future<T> Function() request, {
     int retryCount = 0,
@@ -89,7 +89,9 @@ class ApiService {
     } on TimeoutException catch (e) {
       if (retryCount < maxRetries) {
         final waitTime = retryDelay * (retryCount + 1); // Exponential backoff
-        print('⏳ Request timeout, retrying... (${retryCount + 1}/$maxRetries) after ${waitTime.inSeconds}s');
+        print(
+          '⏳ Request timeout, retrying... (${retryCount + 1}/$maxRetries) after ${waitTime.inSeconds}s',
+        );
         await Future.delayed(waitTime);
         return _retryRequest(request, retryCount: retryCount + 1);
       }
@@ -97,14 +99,16 @@ class ApiService {
     } on SocketException catch (e) {
       if (retryCount < maxRetries) {
         final waitTime = retryDelay * (retryCount + 1); // Exponential backoff
-        print('🔗 Network error, retrying... (${retryCount + 1}/$maxRetries) after ${waitTime.inSeconds}s');
+        print(
+          '🔗 Network error, retrying... (${retryCount + 1}/$maxRetries) after ${waitTime.inSeconds}s',
+        );
         await Future.delayed(waitTime);
         return _retryRequest(request, retryCount: retryCount + 1);
       }
       rethrow;
     }
   }
-  
+
   // ============================================
   // 🚀 HEALTH CHECK TO WARM UP RENDER SERVER
   // ============================================
@@ -124,7 +128,10 @@ class ApiService {
     }
   }
 
-  static Future<void> saveUserSession({required String token, required String userId}) async {
+  static Future<void> saveUserSession({
+    required String token,
+    required String userId,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_userTokenKey, token);
     // Backward compatibility for screens still reading auth_token.
@@ -132,14 +139,14 @@ class ApiService {
     await prefs.setString(_userIdKey, userId);
   }
 
-  static Future<void> saveWorkerSession({required String token, required String workerId}) async {
+  static Future<void> saveWorkerSession({
+    required String token,
+    required String workerId,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _workerSessionKey,
-      jsonEncode({
-        'workerId': workerId,
-        'token': token,
-      }),
+      jsonEncode({'workerId': workerId, 'token': token}),
     );
   }
 
@@ -220,7 +227,8 @@ class ApiService {
 
     if (response.statusCode == 401) {
       throw ApiException(
-        message: body['message']?.toString() ?? 'Session expired or invalid token',
+        message:
+            body['message']?.toString() ?? 'Session expired or invalid token',
         statusCode: 401,
       );
     }
@@ -239,7 +247,10 @@ class ApiService {
     final normalizedRole = role.toLowerCase();
 
     if (normalizedRole != 'user' && normalizedRole != 'worker') {
-      throw const ApiException(message: 'Invalid role selected', statusCode: 400);
+      throw const ApiException(
+        message: 'Invalid role selected',
+        statusCode: 400,
+      );
     }
 
     final response = await postJson('/auth/login', {
@@ -253,8 +264,11 @@ class ApiService {
       return parsed;
     }
 
-    final data = (parsed['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
-    final responseRole = (parsed['role'] ?? data['role'] ?? normalizedRole).toString().toLowerCase();
+    final data =
+        (parsed['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
+    final responseRole = (parsed['role'] ?? data['role'] ?? normalizedRole)
+        .toString()
+        .toLowerCase();
     final token = (parsed['token'] ?? data['token'] ?? '').toString();
     final id = (parsed['id'] ?? data['id'] ?? data['_id'] ?? '').toString();
     final name = (parsed['name'] ?? data['name'] ?? '').toString();
@@ -291,8 +305,11 @@ class ApiService {
     });
 
     final parsed = parseResponse(response);
-    final data = (parsed['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
-    final responseRole = (parsed['role'] ?? data['role'] ?? '').toString().toLowerCase();
+    final data =
+        (parsed['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
+    final responseRole = (parsed['role'] ?? data['role'] ?? '')
+        .toString()
+        .toLowerCase();
     final token = (parsed['token'] ?? data['token'] ?? '').toString();
     final id = (parsed['id'] ?? data['id'] ?? data['_id'] ?? '').toString();
 
@@ -368,9 +385,15 @@ class ApiService {
             )
             .timeout(requestTimeout);
       } on TimeoutException {
-        throw const ApiException(message: 'Network timeout, please try again', statusCode: 408);
+        throw const ApiException(
+          message: 'Network timeout, please try again',
+          statusCode: 408,
+        );
       } on SocketException {
-        throw const ApiException(message: 'Network error, please check your connection', statusCode: 0);
+        throw const ApiException(
+          message: 'Network error, please check your connection',
+          statusCode: 0,
+        );
       }
     });
   }
@@ -389,9 +412,15 @@ class ApiService {
             )
             .timeout(requestTimeout);
       } on TimeoutException {
-        throw const ApiException(message: 'Network timeout, please try again', statusCode: 408);
+        throw const ApiException(
+          message: 'Network timeout, please try again',
+          statusCode: 408,
+        );
       } on SocketException {
-        throw const ApiException(message: 'Network error, please check your connection', statusCode: 0);
+        throw const ApiException(
+          message: 'Network error, please check your connection',
+          statusCode: 0,
+        );
       }
     });
   }
@@ -411,9 +440,15 @@ class ApiService {
             )
             .timeout(requestTimeout);
       } on TimeoutException {
-        throw const ApiException(message: 'Network timeout, please try again', statusCode: 408);
+        throw const ApiException(
+          message: 'Network timeout, please try again',
+          statusCode: 408,
+        );
       } on SocketException {
-        throw const ApiException(message: 'Network error, please check your connection', statusCode: 0);
+        throw const ApiException(
+          message: 'Network error, please check your connection',
+          statusCode: 0,
+        );
       }
     });
   }
@@ -433,9 +468,15 @@ class ApiService {
             )
             .timeout(requestTimeout);
       } on TimeoutException {
-        throw const ApiException(message: 'Network timeout, please try again', statusCode: 408);
+        throw const ApiException(
+          message: 'Network timeout, please try again',
+          statusCode: 408,
+        );
       } on SocketException {
-        throw const ApiException(message: 'Network error, please check your connection', statusCode: 0);
+        throw const ApiException(
+          message: 'Network error, please check your connection',
+          statusCode: 0,
+        );
       }
     });
   }

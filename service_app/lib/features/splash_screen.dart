@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -31,12 +31,10 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 1800),
     )..forward();
 
-    _scaleAnimation = Tween<double>(begin: 0.82, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutBack,
-      ),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.82,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -45,12 +43,10 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    _glowAnimation = Tween<double>(begin: 0.35, end: 0.75).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _glowAnimation = Tween<double>(
+      begin: 0.35,
+      end: 0.75,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     Future.delayed(const Duration(seconds: 2), _goNext);
   }
@@ -92,11 +88,7 @@ class _SplashScreenState extends State<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF071A52),
-              Color(0xFF1B2A7A),
-              Color(0xFF6D28D9),
-            ],
+            colors: [Color(0xFF071A52), Color(0xFF1B2A7A), Color(0xFF6D28D9)],
           ),
         ),
         child: Stack(
@@ -129,7 +121,9 @@ class _SplashScreenState extends State<SplashScreen>
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.cyanAccent.withOpacity(_glowAnimation.value),
+                                  color: Colors.cyanAccent.withOpacity(
+                                    _glowAnimation.value,
+                                  ),
                                   blurRadius: 30,
                                   spreadRadius: 6,
                                 ),
@@ -209,13 +203,7 @@ class _SplashScreenState extends State<SplashScreen>
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }
 }
-
-
-

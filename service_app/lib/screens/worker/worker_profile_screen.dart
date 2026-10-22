@@ -157,7 +157,8 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
               return;
             }
             ConnectivityService.ensureConnectedOrShow(context).then((ok) {
-              if (ok) Navigator.pushReplacementNamed(context, '/worker/dashboard');
+              if (ok)
+                Navigator.pushReplacementNamed(context, '/worker/dashboard');
             });
           },
         ),
@@ -173,57 +174,60 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
-                        ElevatedButton(
-                          onPressed: _loadProfile,
-                          child: const Text('Retry'),
-                        ),
-                      ],
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_error!, textAlign: TextAlign.center),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _loadProfile,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadProfile,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                children: [
+                  ResponsiveContent(
+                    maxWidth: 760,
+                    padding: const EdgeInsets.symmetric(horizontal: 0),
+                    child: _buildHeroCard(),
+                  ),
+                  const SizedBox(height: 12),
+                  ResponsiveContent(
+                    maxWidth: 760,
+                    padding: const EdgeInsets.symmetric(horizontal: 0),
+                    child: _buildAccountCard(),
+                  ),
+                  const SizedBox(height: 12),
+                  ResponsiveContent(
+                    maxWidth: 760,
+                    padding: const EdgeInsets.symmetric(horizontal: 0),
+                    child: _buildDangerZone(),
+                  ),
+                  const SizedBox(height: 24),
+                  Center(
+                    child: Text(
+                      'App Version 1.0.0',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                      ),
                     ),
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadProfile,
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                    children: [
-                      ResponsiveContent(
-                        maxWidth: 760,
-                        padding: const EdgeInsets.symmetric(horizontal: 0),
-                        child: _buildHeroCard(),
-                      ),
-                      const SizedBox(height: 12),
-                      ResponsiveContent(
-                        maxWidth: 760,
-                        padding: const EdgeInsets.symmetric(horizontal: 0),
-                        child: _buildAccountCard(),
-                      ),
-                      const SizedBox(height: 12),
-                      ResponsiveContent(
-                        maxWidth: 760,
-                        padding: const EdgeInsets.symmetric(horizontal: 0),
-                        child: _buildDangerZone(),
-                      ),
-                      const SizedBox(height: 24),
-                      Center(
-                        child: Text(
-                          'App Version 1.0.0',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
+              ),
+            ),
     );
   }
 
@@ -393,10 +397,10 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
               onPressed: _session == null
                   ? null
                   : () => Navigator.pushNamed(
-                        context,
-                        '/worker/bookings',
-                        arguments: _session,
-                      ),
+                      context,
+                      '/worker/bookings',
+                      arguments: _session,
+                    ),
               icon: const Icon(Icons.list_alt_outlined),
               label: const Text('View Bookings'),
             ),

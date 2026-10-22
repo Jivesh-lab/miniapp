@@ -89,9 +89,14 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         labelStyle: GoogleFonts.inter(color: textSecondary),
-        hintStyle: GoogleFonts.inter(color: textSecondary.withValues(alpha: 0.5)),
+        hintStyle: GoogleFonts.inter(
+          color: textSecondary.withValues(alpha: 0.5),
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: Colors.grey.shade200),

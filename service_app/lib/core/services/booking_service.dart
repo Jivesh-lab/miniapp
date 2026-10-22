@@ -8,7 +8,11 @@ import 'api_service.dart';
 class BookingService {
   Future<BookingModel> createBooking(Map<String, dynamic> data) async {
     try {
-      final response = await ApiService.postJson('/bookings', data, useAuthHeaders: true);
+      final response = await ApiService.postJson(
+        '/bookings',
+        data,
+        useAuthHeaders: true,
+      );
       final body = await ApiService.parseAuthenticatedResponse(
         response,
         clearSession: ApiService.clearUserSession,
@@ -22,7 +26,10 @@ class BookingService {
 
   Future<List<BookingModel>> getBookings(String userId) async {
     try {
-      final response = await ApiService.getJson('/bookings/user', useAuthHeaders: true);
+      final response = await ApiService.getJson(
+        '/bookings/user',
+        useAuthHeaders: true,
+      );
       final body = await ApiService.parseAuthenticatedResponse(
         response,
         clearSession: ApiService.clearUserSession,
@@ -42,11 +49,9 @@ class BookingService {
     required String status,
   }) async {
     try {
-      final response = await ApiService.patchJson(
-        '/bookings/$id',
-        {'status': status},
-        useAuthHeaders: true,
-      );
+      final response = await ApiService.patchJson('/bookings/$id', {
+        'status': status,
+      }, useAuthHeaders: true);
 
       final body = await ApiService.parseAuthenticatedResponse(
         response,
@@ -83,9 +88,7 @@ class BookingService {
     String? comment,
   }) async {
     try {
-      final payload = <String, dynamic>{
-        'rating': rating,
-      };
+      final payload = <String, dynamic>{'rating': rating};
 
       final normalizedComment = (comment ?? '').trim();
       if (normalizedComment.isNotEmpty) {

@@ -36,7 +36,9 @@ class AppTextField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
-        prefixIcon: prefixIcon != null ? Icon(prefixIcon, color: AppColors.primary) : null,
+        prefixIcon: prefixIcon != null
+            ? Icon(prefixIcon, color: AppColors.primary)
+            : null,
         prefixIconColor: AppColors.primary,
         suffixIconColor: AppColors.textSecondary,
         suffixIcon: suffixIcon,

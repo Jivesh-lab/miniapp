@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -88,7 +88,10 @@ class AppApiClient {
     if (withAuth) {
       final token = await getToken();
       if (token == null || token.isEmpty) {
-        throw const ApiException(message: 'No token, unauthorized', statusCode: 401);
+        throw const ApiException(
+          message: 'No token, unauthorized',
+          statusCode: 401,
+        );
       }
       headers['Authorization'] = 'Bearer $token';
     }
@@ -176,17 +179,18 @@ class AppApiClient {
       () => http.post(
         _uri('/login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'identifier': identifier,
-          'password': password,
-        }),
+        body: jsonEncode({'identifier': identifier, 'password': password}),
       ),
     );
 
     await _throwIfError(response);
 
     final body = _decodeBody(response);
-    final token = (body['token'] ?? (body['data'] as Map<String, dynamic>?)?['token'] ?? '').toString();
+    final token =
+        (body['token'] ??
+                (body['data'] as Map<String, dynamic>?)?['token'] ??
+                '')
+            .toString();
     if (token.isNotEmpty) {
       await saveToken(token);
     }
@@ -238,10 +242,8 @@ class AppApiClient {
 
   static Future<Map<String, dynamic>> getProfile() async {
     final response = await _executeWithRetry(
-      () async => http.get(
-        _uri('/profile'),
-        headers: await _headers(withAuth: true),
-      ),
+      () async =>
+          http.get(_uri('/profile'), headers: await _headers(withAuth: true)),
     );
 
     await _throwIfError(response);
@@ -264,7 +266,10 @@ class AppApiClient {
         await _executeWithRetry(
           () => http.post(
             _uri('/auth/logout'),
-            headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
             body: jsonEncode(<String, dynamic>{}),
           ),
         );
@@ -276,4 +281,3 @@ class AppApiClient {
     await clearSession();
   }
 }
-

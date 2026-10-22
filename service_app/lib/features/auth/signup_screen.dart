@@ -90,7 +90,10 @@ class _SignupScreenState extends State<SignupScreen> {
     }
 
     if (!_acceptedTerms) {
-      ErrorMessageHelper.showSnackBar(context, 'Please accept terms to continue');
+      ErrorMessageHelper.showSnackBar(
+        context,
+        'Please accept terms to continue',
+      );
       return;
     }
 
@@ -133,8 +136,7 @@ class _SignupScreenState extends State<SignupScreen> {
       Navigator.pushReplacementNamed(context, '/login', arguments: 'user');
     } catch (e) {
       if (!mounted) return;
-      ErrorMessageHelper.showSnackBar(
-          context, ErrorMessageHelper.register(e));
+      ErrorMessageHelper.showSnackBar(context, ErrorMessageHelper.register(e));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -146,7 +148,10 @@ class _SignupScreenState extends State<SignupScreen> {
     }
 
     if (!_acceptedTerms) {
-      ErrorMessageHelper.showSnackBar(context, 'Please accept terms to continue');
+      ErrorMessageHelper.showSnackBar(
+        context,
+        'Please accept terms to continue',
+      );
       return;
     }
 
@@ -375,7 +380,9 @@ class _SignupScreenState extends State<SignupScreen> {
                               });
                             },
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                             ),
                           ),
                           validator: (value) {
@@ -398,7 +405,9 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                           child: FractionallySizedBox(
                             alignment: Alignment.centerLeft,
-                            widthFactor: (_passwordScore(_passwordController.text) / 4).clamp(0, 1),
+                            widthFactor:
+                                (_passwordScore(_passwordController.text) / 4)
+                                    .clamp(0, 1),
                             child: Container(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(999),
@@ -425,11 +434,14 @@ class _SignupScreenState extends State<SignupScreen> {
                           suffixIcon: IconButton(
                             onPressed: () {
                               setState(() {
-                                _obscureConfirmPassword = !_obscureConfirmPassword;
+                                _obscureConfirmPassword =
+                                    !_obscureConfirmPassword;
                               });
                             },
                             icon: Icon(
-                              _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                              _obscureConfirmPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                             ),
                           ),
                           validator: (value) {
@@ -448,7 +460,9 @@ class _SignupScreenState extends State<SignupScreen> {
                           onChanged: _isLoading
                               ? null
                               : (value) {
-                                  setState(() => _acceptedTerms = value == true);
+                                  setState(
+                                    () => _acceptedTerms = value == true,
+                                  );
                                 },
                           controlAffinity: ListTileControlAffinity.leading,
                           contentPadding: EdgeInsets.zero,
@@ -464,10 +478,12 @@ class _SignupScreenState extends State<SignupScreen> {
                             onPressed: _isLoading
                                 ? null
                                 : isWorker
-                                    ? _registerWorker
-                                    : _registerUser,
+                                ? _registerWorker
+                                : _registerUser,
                             isLoading: _isLoading,
-                            label: isWorker ? 'Create Worker Account' : 'Create User Account',
+                            label: isWorker
+                                ? 'Create Worker Account'
+                                : 'Create User Account',
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -475,10 +491,15 @@ class _SignupScreenState extends State<SignupScreen> {
                           onPressed: _isLoading
                               ? null
                               : () async {
-                                  if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+                                  if (!await ConnectivityService.ensureConnectedOrShow(
+                                    context,
+                                  )) {
                                     return;
                                   }
-                                  Navigator.pushReplacementNamed(context, '/login');
+                                  Navigator.pushReplacementNamed(
+                                    context,
+                                    '/login',
+                                  );
                                 },
                           child: const Text('Already have an account? Login'),
                         ),

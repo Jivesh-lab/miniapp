@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/utils/error_message_helper.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/services/location_permission_handler.dart';
 import '../../core/services/location_api_service.dart';
@@ -13,10 +14,8 @@ import '../../core/services/location_api_service.dart';
 class LocationDemoScreen extends StatefulWidget {
   final String userToken; // JWT token from login
 
-  const LocationDemoScreen({
-    Key? key,
-    required this.userToken,
-  }) : super(key: key);
+  const LocationDemoScreen({Key? key, required this.userToken})
+    : super(key: key);
 
   @override
   State<LocationDemoScreen> createState() => _LocationDemoScreenState();
@@ -58,8 +57,7 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
       }
 
       // Step 2: Get current location
-      final position =
-          await LocationPermissionHandler.getCurrentLocation();
+      final position = await LocationPermissionHandler.getCurrentLocation();
 
       if (position == null) {
         setState(() {
@@ -70,8 +68,7 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
       }
 
       // Step 3: Convert coordinates to address
-      final address =
-          await LocationPermissionHandler.getAddressFromCoordinates(
+      final address = await LocationPermissionHandler.getAddressFromCoordinates(
         position.latitude,
         position.longitude,
       );
@@ -88,7 +85,7 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
       await _sendLocationToBackend();
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error: ${e.toString()}';
+        _errorMessage = ErrorMessageHelper.generic(e);
         _isLoading = false;
       });
     }
@@ -117,7 +114,9 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
       });
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ErrorMessageHelper.showSnack(
+          context,
+
           const SnackBar(content: Text('Location sent to backend')),
         );
       }
@@ -137,10 +136,7 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
         children: [
           const CircularProgressIndicator(),
           const SizedBox(height: 16),
-          Text(
-            'Fetching location...',
-            style: GoogleFonts.inter(fontSize: 16),
-          ),
+          Text('Fetching location...', style: GoogleFonts.inter(fontSize: 16)),
         ],
       ),
     );
@@ -152,19 +148,12 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.location_off,
-            size: 64,
-            color: Colors.red.shade300,
-          ),
+          Icon(Icons.location_off, size: 64, color: Colors.red.shade300),
           const SizedBox(height: 16),
           Text(
             _errorMessage ?? 'Error fetching location',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              color: Colors.red,
-            ),
+            style: GoogleFonts.inter(fontSize: 16, color: Colors.red),
           ),
           const SizedBox(height: 24),
           ElevatedButton(
@@ -198,11 +187,7 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.location_on,
-                  color: Colors.teal,
-                  size: 32,
-                ),
+                Icon(Icons.location_on, color: Colors.teal, size: 32),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -248,9 +233,15 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _buildCoordinateRow('Latitude', _latitude?.toString() ?? 'N/A'),
+                  _buildCoordinateRow(
+                    'Latitude',
+                    _latitude?.toString() ?? 'N/A',
+                  ),
                   const SizedBox(height: 8),
-                  _buildCoordinateRow('Longitude', _longitude?.toString() ?? 'N/A'),
+                  _buildCoordinateRow(
+                    'Longitude',
+                    _longitude?.toString() ?? 'N/A',
+                  ),
                 ],
               ),
             ),
@@ -274,8 +265,7 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
                       width: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
                   : Text(
@@ -356,10 +346,7 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: Colors.grey.shade700,
-          ),
+          style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade700),
         ),
         Flexible(
           child: SelectableText(
@@ -381,9 +368,7 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
       appBar: AppBar(
         title: Text(
           'Location Demo',
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.bold,
-          ),
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
@@ -391,8 +376,8 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
       body: _isLoading
           ? _buildLoadingState()
           : _errorMessage != null
-              ? _buildErrorState()
-              : _buildSuccessState(),
+          ? _buildErrorState()
+          : _buildSuccessState(),
     );
   }
 }

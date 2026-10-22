@@ -109,7 +109,9 @@ class WorkerCard extends StatelessWidget {
 
   Widget _buildAvailabilityChip() {
     final isOnline = worker.isOnline;
-    final backgroundColor = isOnline ? Colors.green.shade50 : Colors.grey.shade100;
+    final backgroundColor = isOnline
+        ? Colors.green.shade50
+        : Colors.grey.shade100;
     final textColor = isOnline ? Colors.green.shade700 : Colors.grey.shade700;
     final label = isOnline ? 'Online' : 'Offline';
 

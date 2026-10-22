@@ -2,23 +2,19 @@ class WorkerSlot {
   final String date;
   final List<String> timeSlots;
 
-  WorkerSlot({
-    required this.date,
-    required this.timeSlots,
-  });
+  WorkerSlot({required this.date, required this.timeSlots});
 
   factory WorkerSlot.fromJson(Map<String, dynamic> json) {
     return WorkerSlot(
       date: (json['date'] ?? '').toString(),
-      timeSlots: List<String>.from((json['timeSlots'] ?? <dynamic>[]) as List<dynamic>),
+      timeSlots: List<String>.from(
+        (json['timeSlots'] ?? <dynamic>[]) as List<dynamic>,
+      ),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'date': date,
-      'timeSlots': timeSlots,
-    };
+    return {'date': date, 'timeSlots': timeSlots};
   }
 }
 
@@ -83,11 +79,14 @@ class WorkerModel {
 
   // Convert from JSON
   factory WorkerModel.fromJson(Map<String, dynamic> json) {
-    final reviewsJson = (json['reviews'] ?? json['aboutReviews'] ?? <dynamic>[]) as List<dynamic>;
+    final reviewsJson =
+        (json['reviews'] ?? json['aboutReviews'] ?? <dynamic>[])
+            as List<dynamic>;
     final parsedReviews = reviewsJson
         .map(
           (item) => {
-            'name': (item as Map<String, dynamic>)['user']?.toString() ??
+            'name':
+                (item as Map<String, dynamic>)['user']?.toString() ??
                 item['name']?.toString() ??
                 'User',
             'rating': (item['rating'] as num?)?.toInt() ?? 5,
@@ -116,8 +115,10 @@ class WorkerModel {
       rating: (json['rating'] as num?)?.toDouble() ?? 0,
       reviews: (json['reviewsCount'] as num?)?.toInt() ?? parsedReviews.length,
       distance: (json['distance'] as num?)?.toDouble(),
-      distanceFormatted: (json['distanceFormatted'] ?? json['distanceLabel'])?.toString(),
-      pricePerHour: (json['pricePerHour'] as num?)?.toInt() ??
+      distanceFormatted: (json['distanceFormatted'] ?? json['distanceLabel'])
+          ?.toString(),
+      pricePerHour:
+          (json['pricePerHour'] as num?)?.toInt() ??
           (json['price'] as num?)?.toInt() ??
           0,
       experience: (json['experience'] as num?)?.toInt() ?? 0,
@@ -125,8 +126,11 @@ class WorkerModel {
       isAvailable: parsedIsOnline,
       isOnline: parsedIsOnline,
       lastLocationUpdate: parsedLastLocationUpdate,
-      skills: List<String>.from((json['skills'] ?? <dynamic>[]) as List<dynamic>),
-      profileDescription: (json['profileDescription'] ?? 'No description available').toString(),
+      skills: List<String>.from(
+        (json['skills'] ?? <dynamic>[]) as List<dynamic>,
+      ),
+      profileDescription:
+          (json['profileDescription'] ?? 'No description available').toString(),
       aboutReviews: parsedReviews,
       availableSlots: ((json['availableSlots'] ?? <dynamic>[]) as List<dynamic>)
           .map((item) => WorkerSlot.fromJson(item as Map<String, dynamic>))

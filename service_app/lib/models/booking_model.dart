@@ -33,17 +33,19 @@ class WorkerBooking {
 
     return WorkerBooking(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
-      customerName: (json['customerName'] ??
-              userMap['name'] ??
-              json['userName'] ??
-              userMap['email'] ??
-              'Customer')
-          .toString(),
-      customerContact: (json['customerContact'] ??
-              userMap['phone'] ??
-              userMap['email'] ??
-              'Not available')
-          .toString(),
+      customerName:
+          (json['customerName'] ??
+                  userMap['name'] ??
+                  json['userName'] ??
+                  userMap['email'] ??
+                  'Customer')
+              .toString(),
+      customerContact:
+          (json['customerContact'] ??
+                  userMap['phone'] ??
+                  userMap['email'] ??
+                  'Not available')
+              .toString(),
       address: (json['address'] ?? 'Not provided').toString(),
       date: (json['date'] ?? '').toString(),
       time: (json['time'] ?? '').toString(),
@@ -116,9 +118,7 @@ class WorkerBooking {
     }
   }
 
-  WorkerBooking copyWith({
-    WorkerBookingStatus? status,
-  }) {
+  WorkerBooking copyWith({WorkerBookingStatus? status}) {
     return WorkerBooking(
       id: id,
       customerName: customerName,

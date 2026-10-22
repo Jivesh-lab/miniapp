@@ -57,15 +57,19 @@ class UserService {
 
   Future<Map<String, dynamic>> getUserProfile() async {
     try {
-      final response = await ApiService.getJson('/users/profile', useAuthHeaders: true);
+      final response = await ApiService.getJson(
+        '/users/profile',
+        useAuthHeaders: true,
+      );
       final body = await ApiService.parseAuthenticatedResponse(
         response,
         clearSession: ApiService.clearUserSession,
         loginRoute: '/login',
       );
 
-      final data = (body['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
-      
+      final data =
+          (body['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
+
       // Save user data locally
       final user = UserDataModel.fromJson(data);
       await saveUserData(user);
@@ -82,14 +86,10 @@ class UserService {
     required String phone,
   }) async {
     try {
-      final response = await ApiService.putJson(
-        '/users/$userId',
-        {
-          'name': name.trim(),
-          'phone': phone.trim(),
-        },
-        useAuthHeaders: true,
-      );
+      final response = await ApiService.putJson('/users/$userId', {
+        'name': name.trim(),
+        'phone': phone.trim(),
+      }, useAuthHeaders: true);
 
       final body = await ApiService.parseAuthenticatedResponse(
         response,
@@ -108,11 +108,10 @@ class UserService {
     required String workerId,
   }) async {
     try {
-      final response = await ApiService.postJson(
-        '/users/favorites',
-        {'userId': userId, 'workerId': workerId},
-        useAuthHeaders: true,
-      );
+      final response = await ApiService.postJson('/users/favorites', {
+        'userId': userId,
+        'workerId': workerId,
+      }, useAuthHeaders: true);
 
       final body = await ApiService.parseAuthenticatedResponse(
         response,
@@ -127,7 +126,10 @@ class UserService {
 
   Future<List<WorkerModel>> getFavoriteWorkers(String userId) async {
     try {
-      final response = await ApiService.getJson('/users/favorites/$userId', useAuthHeaders: true);
+      final response = await ApiService.getJson(
+        '/users/favorites/$userId',
+        useAuthHeaders: true,
+      );
 
       final body = await ApiService.parseAuthenticatedResponse(
         response,

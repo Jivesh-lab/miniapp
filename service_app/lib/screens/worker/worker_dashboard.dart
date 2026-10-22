@@ -42,7 +42,9 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
     if (socket != null) {
       socket.on('new_booking', (data) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        ErrorMessageHelper.showSnack(
+          context,
+
           const SnackBar(
             content: Text('You have a new booking request!'),
             backgroundColor: Color(0xFF10B981),
@@ -206,11 +208,7 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
     }
     ConnectivityService.ensureConnectedOrShow(context).then((ok) {
       if (!ok) return;
-      Navigator.pushNamed(
-        context,
-        '/worker/bookings',
-        arguments: _session,
-      );
+      Navigator.pushNamed(context, '/worker/bookings', arguments: _session);
     });
   }
 
@@ -270,13 +268,13 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
         .where((b) => b.status == WorkerBookingStatus.completed)
         .length;
     final activeBooking = _bookings.cast<WorkerBooking?>().firstWhere(
-        (b) =>
+      (b) =>
           b != null &&
           (b.status == WorkerBookingStatus.pending ||
-            b.status == WorkerBookingStatus.confirmed ||
-            b.status == WorkerBookingStatus.inProgress),
-        orElse: () => null,
-      );
+              b.status == WorkerBookingStatus.confirmed ||
+              b.status == WorkerBookingStatus.inProgress),
+      orElse: () => null,
+    );
 
     return RefreshIndicator(
       onRefresh: () => _loadDashboard(forceRefresh: true),
@@ -341,7 +339,10 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.alarm_on_rounded, color: AppColors.primary),
+                              const Icon(
+                                Icons.alarm_on_rounded,
+                                color: AppColors.primary,
+                              ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(

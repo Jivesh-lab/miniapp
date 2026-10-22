@@ -54,8 +54,12 @@ class _LoginScreenState extends State<LoginScreen> {
       final data = response['data'] is Map<String, dynamic>
           ? response['data'] as Map<String, dynamic>
           : <String, dynamic>{};
-      final role = (response['role'] ?? data['role'] ?? _selectedRole).toString().toLowerCase();
-      final profileComplete = response['profileComplete'] == true || data['profileComplete'] == true;
+      final role = (response['role'] ?? data['role'] ?? _selectedRole)
+          .toString()
+          .toLowerCase();
+      final profileComplete =
+          response['profileComplete'] == true ||
+          data['profileComplete'] == true;
 
       if (!await ConnectivityService.ensureConnectedOrShow(context)) {
         return;
@@ -139,7 +143,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           SegmentedButton<String>(
                             segments: const [
                               ButtonSegment(value: 'user', label: Text('User')),
-                              ButtonSegment(value: 'worker', label: Text('Worker')),
+                              ButtonSegment(
+                                value: 'worker',
+                                label: Text('Worker'),
+                              ),
                             ],
                             selected: {_selectedRole},
                             onSelectionChanged: (selected) {
@@ -151,7 +158,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 16),
                           AppTextField(
                             controller: _identifierController,
-                            labelText: _selectedRole == 'worker' ? 'Phone' : 'Email or Phone',
+                            labelText: _selectedRole == 'worker'
+                                ? 'Phone'
+                                : 'Email or Phone',
                             prefixIcon: Icons.person_outline,
                             validator: (value) {
                               final text = value?.trim() ?? '';
@@ -195,7 +204,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 });
                               },
                               icon: Icon(
-                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
                               ),
                             ),
                             validator: (value) {
@@ -214,7 +225,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: AppButton(
                               onPressed: _isLoading ? null : _login,
                               isLoading: _isLoading,
-                              label: 'Login as ${_selectedRole == 'worker' ? 'Worker' : 'User'}',
+                              label:
+                                  'Login as ${_selectedRole == 'worker' ? 'Worker' : 'User'}',
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -224,14 +236,19 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: _isLoading
                                   ? null
                                   : () async {
-                                      if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+                                      if (!await ConnectivityService.ensureConnectedOrShow(
+                                        context,
+                                      )) {
                                         return;
                                       }
                                       Navigator.pushNamed(context, '/signup');
                                     },
                               style: TextButton.styleFrom(
                                 minimumSize: Size.zero,
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               child: const Text(

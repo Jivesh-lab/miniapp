@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/utils/error_message_helper.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/api_service.dart';
@@ -7,7 +8,8 @@ import '../../core/services/user_service.dart';
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onBack;
   final VoidCallback? onNavigateToBookings;
-  const ProfileScreen({Key? key, this.onBack, this.onNavigateToBookings}) : super(key: key);
+  const ProfileScreen({Key? key, this.onBack, this.onNavigateToBookings})
+    : super(key: key);
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -33,7 +35,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return 'U';
     }
 
-    final parts = normalized.split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+    final parts = normalized
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
     if (parts.isEmpty) {
       return 'U';
     }
@@ -42,7 +47,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return parts.first.substring(0, 1).toUpperCase();
     }
 
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+        .toUpperCase();
   }
 
   Future<void> _loadProfile() async {
@@ -72,7 +78,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ErrorMessageHelper.showSnack(
+        context,
         const SnackBar(content: Text('Failed to load profile')),
       );
     } finally {
@@ -94,10 +101,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(isMobile),
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(
-          horizontal: padding,
-          vertical: 16,
-        ),
+        padding: EdgeInsets.symmetric(horizontal: padding, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -329,11 +333,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // Phone
           Row(
             children: [
-              Icon(
-                Icons.phone_outlined,
-                color: Colors.grey.shade600,
-                size: 18,
-              ),
+              Icon(Icons.phone_outlined, color: Colors.grey.shade600, size: 18),
               const SizedBox(width: 12),
               Text(
                 _userPhone,
@@ -485,16 +485,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     if (nextName.isEmpty || nextPhone.isEmpty) {
                       if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Name and phone are required')),
+                      ErrorMessageHelper.showSnack(
+                        context,
+
+                        const SnackBar(
+                          content: Text('Name and phone are required'),
+                        ),
                       );
                       return;
                     }
 
                     if (_userId.isEmpty) {
                       if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Unable to identify user')),
+                      ErrorMessageHelper.showSnack(
+                        context,
+
+                        const SnackBar(
+                          content: Text('Unable to identify user'),
+                        ),
                       );
                       return;
                     }
@@ -515,7 +523,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                       Navigator.pop(context);
 
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      ErrorMessageHelper.showSnack(
+                        context,
+
                         SnackBar(
                           content: Text(
                             'Profile updated successfully!',
@@ -532,8 +542,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       );
                     } catch (_) {
                       if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Failed to update profile')),
+                      ErrorMessageHelper.showSnack(
+                        context,
+
+                        const SnackBar(
+                          content: Text('Failed to update profile'),
+                        ),
                       );
                     }
                   },
@@ -562,7 +576,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _showFavorites() async {
     if (_userId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ErrorMessageHelper.showSnack(
+        context,
         const SnackBar(content: Text('Profile not loaded yet')),
       );
       return;
@@ -615,17 +630,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ? const Center(child: Text('No favorite workers yet'))
                           : ListView.separated(
                               itemCount: favorites.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 8),
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 8),
                               itemBuilder: (context, index) {
                                 final worker = favorites[index];
                                 return ListTile(
                                   tileColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    side: BorderSide(color: Colors.grey.shade200),
+                                    side: BorderSide(
+                                      color: Colors.grey.shade200,
+                                    ),
                                   ),
                                   title: Text(worker.name),
-                                  subtitle: Text('₹${worker.pricePerHour} • ${worker.rating}★'),
+                                  subtitle: Text(
+                                    '₹${worker.pricePerHour} • ${worker.rating}★',
+                                  ),
                                 );
                               },
                             ),
@@ -639,7 +659,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      ErrorMessageHelper.showSnack(
+        context,
+
         const SnackBar(content: Text('Failed to fetch favorites')),
       );
     }
@@ -681,10 +703,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 2,
-              ),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
           ),
         ),
@@ -931,7 +950,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: Text(
             'Logout',
             style: GoogleFonts.inter(
@@ -942,10 +963,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           content: Text(
             'Are you sure you want to logout from your account?',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.grey.shade700,
-            ),
+            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey.shade700),
           ),
           actions: [
             TextButton(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/utils/error_message_helper.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/connectivity_service.dart';
@@ -66,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       setState(() {
-        _serviceError = e.toString().replaceFirst('Exception: ', '');
+        _serviceError = ErrorMessageHelper.generic(e);
         _isLoadingServices = false;
       });
     }
@@ -89,16 +90,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-                  
+
                   // 🎯 USER GREETING SECTION (NEW)
                   _buildGreetingSection(),
-                  
+
                   const SizedBox(height: 28),
-                  
+
                   // Search Bar
                   SearchBarWidget(onChanged: (value) {}),
                   const SizedBox(height: 20),
-                  
+
                   // Services Title
                   Text(
                     'Popular Services',
@@ -109,11 +110,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   // Services Grid
                   _buildServicesGrid(width),
                   const SizedBox(height: 28),
-                  
+
                   // Why Choose Us Section
                   Text(
                     'Why Choose Us?',
@@ -124,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   // Features Grid
                   _buildFeatureGrid(width),
                   const SizedBox(height: 32),
@@ -141,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 🎯 NEW: Greeting section with user name and location
   Widget _buildGreetingSection() {
     final greeting = _getTimeBasedGreeting();
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -154,10 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           // Subtext
           Text(
             'Welcome back!',
@@ -201,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Location with icon
           Row(
             children: [
@@ -465,16 +463,18 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _navigateToWorkerList(BuildContext context, String serviceId, String serviceName) {
+  void _navigateToWorkerList(
+    BuildContext context,
+    String serviceId,
+    String serviceName,
+  ) {
     ConnectivityService.ensureConnectedOrShow(context).then((ok) {
       if (!ok) return;
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => WorkerListScreen(
-            serviceId: serviceId,
-            serviceName: serviceName,
-          ),
+          builder: (context) =>
+              WorkerListScreen(serviceId: serviceId, serviceName: serviceName),
         ),
       );
     });

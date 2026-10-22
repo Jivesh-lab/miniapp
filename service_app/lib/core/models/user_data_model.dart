@@ -28,8 +28,12 @@ class UserDataModel {
       phone: (json['phone'] ?? '').toString(),
       role: (json['role'] ?? 'user').toString(),
       token: json['token']?.toString(),
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'].toString()) : null,
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'].toString()) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'].toString())
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'].toString())
+          : null,
     );
   }
 
@@ -82,5 +86,6 @@ class UserDataModel {
   }
 
   @override
-  String toString() => 'UserDataModel(id: $id, name: $name, email: $email, phone: $phone, role: $role)';
+  String toString() =>
+      'UserDataModel(id: $id, name: $name, email: $email, phone: $phone, role: $role)';
 }

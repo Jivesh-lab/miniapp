@@ -1,4 +1,4 @@
-﻿import 'package:http/http.dart' as http;
+import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:geocoding/geocoding.dart' as geocoding;
 
@@ -47,15 +47,22 @@ class LocationApiService {
     }
   }
 
-  static Future<String> _resolveCityLocally(double latitude, double longitude) async {
+  static Future<String> _resolveCityLocally(
+    double latitude,
+    double longitude,
+  ) async {
     try {
-      final placemarks = await geocoding.placemarkFromCoordinates(latitude, longitude);
+      final placemarks = await geocoding.placemarkFromCoordinates(
+        latitude,
+        longitude,
+      );
       if (placemarks.isEmpty) {
         return 'Unknown';
       }
 
       final placemark = placemarks.first;
-      final city = placemark.locality ??
+      final city =
+          placemark.locality ??
           placemark.subAdministrativeArea ??
           placemark.administrativeArea ??
           placemark.name ??
@@ -79,13 +86,8 @@ class LocationApiService {
       final response = await http
           .post(
             Uri.parse('$baseUrl/get-city'),
-            headers: const {
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({
-              'lat': latitude,
-              'lng': longitude,
-            }),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({'lat': latitude, 'lng': longitude}),
           )
           .timeout(const Duration(seconds: 10));
 
@@ -131,23 +133,22 @@ class LocationApiService {
       }
 
       // Prepare request body
-      final body = jsonEncode({
-        'latitude': latitude,
-        'longitude': longitude,
-      });
+      final body = jsonEncode({'latitude': latitude, 'longitude': longitude});
 
       // Make API request
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/users/update-location'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $userToken',
-        },
-        body: body,
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw Exception('Request timeout'),
-      );
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/users/update-location'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $userToken',
+            },
+            body: body,
+          )
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw Exception('Request timeout'),
+          );
 
       // Check response status
       if (response.statusCode == 200) {
@@ -156,7 +157,9 @@ class LocationApiService {
           print('Location sent successfully');
           return true;
         } else {
-          throw Exception(responseData['message'] ?? 'Failed to update location');
+          throw Exception(
+            responseData['message'] ?? 'Failed to update location',
+          );
         }
       } else if (response.statusCode == 401) {
         throw Exception('Unauthorized: Please login again');
@@ -189,14 +192,16 @@ class LocationApiService {
         'address': address,
       });
 
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/users/update-profile'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $userToken',
-        },
-        body: body,
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/users/update-profile'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $userToken',
+            },
+            body: body,
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -232,16 +237,13 @@ class LocationApiService {
         queryParams['serviceId'] = serviceId;
       }
 
-      final uri = Uri.parse('$baseUrl/api/workers').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/api/workers',
+      ).replace(queryParameters: queryParams);
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $userToken',
-        },
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(uri, headers: {'Authorization': 'Bearer $userToken'})
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -256,4 +258,3 @@ class LocationApiService {
     }
   }
 }
-

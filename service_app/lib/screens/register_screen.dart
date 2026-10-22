@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/error_message_helper.dart';
 
 import '../core/services/app_api_client.dart';
 import '../core/services/api_exception.dart';
@@ -48,7 +49,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ErrorMessageHelper.showSnack(
+        context,
+
         const SnackBar(content: Text('Account created. Please log in.')),
       );
       Navigator.pop(context);
@@ -57,8 +60,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
+      ErrorMessageHelper.showSnack(
+        context,
+
+        SnackBar(content: Text(ErrorMessageHelper.register(error))),
       );
     } finally {
       if (mounted) {
@@ -81,21 +86,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Full name'),
-                validator: (value) => (value == null || value.trim().isEmpty) ? 'Enter your name' : null,
+                validator: (value) => (value == null || value.trim().isEmpty)
+                    ? 'Enter your name'
+                    : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email'),
                 keyboardType: TextInputType.emailAddress,
-                validator: (value) => (value == null || !value.contains('@')) ? 'Enter a valid email' : null,
+                validator: (value) => (value == null || !value.contains('@'))
+                    ? 'Enter a valid email'
+                    : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _phoneController,
                 decoration: const InputDecoration(labelText: 'Phone'),
                 keyboardType: TextInputType.phone,
-                validator: (value) => (value == null || value.trim().length < 10) ? 'Enter a valid phone' : null,
+                validator: (value) =>
+                    (value == null || value.trim().length < 10)
+                    ? 'Enter a valid phone'
+                    : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -104,8 +116,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 decoration: InputDecoration(
                   labelText: 'Password',
                   suffixIcon: IconButton(
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                    icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
+                    ),
                   ),
                 ),
                 validator: (value) => (value == null || value.length < 6)

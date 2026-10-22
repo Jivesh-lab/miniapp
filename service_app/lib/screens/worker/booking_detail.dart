@@ -105,9 +105,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         _booking = _booking.copyWith(status: updated.status);
       });
 
-      ScaffoldMessenger.of(
+      ErrorMessageHelper.showSnack(
         context,
-      ).showSnackBar(SnackBar(content: Text(successMessage)));
+        SnackBar(content: Text(successMessage)),
+      );
 
       Navigator.pop(context, true);
     } catch (e) {

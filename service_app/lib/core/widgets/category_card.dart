@@ -72,10 +72,7 @@ class _CategoryCardState extends State<CategoryCard>
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: AppColors.divider,
-                  width: 1,
-                ),
+                border: Border.all(color: AppColors.divider, width: 1),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.grey.withValues(alpha: 0.08),
@@ -100,11 +97,7 @@ class _CategoryCardState extends State<CategoryCard>
                         color: widget.color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Icon(
-                        widget.icon,
-                        color: widget.color,
-                        size: 32,
-                      ),
+                      child: Icon(widget.icon, color: widget.color, size: 32),
                     ),
                     const SizedBox(height: 12),
                     Text(

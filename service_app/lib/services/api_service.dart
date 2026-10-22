@@ -14,16 +14,10 @@ class WorkerSession {
   final String workerId;
   final String token;
 
-  const WorkerSession({
-    required this.workerId,
-    required this.token,
-  });
+  const WorkerSession({required this.workerId, required this.token});
 
   Map<String, dynamic> toJson() {
-    return {
-      'workerId': workerId,
-      'token': token,
-    };
+    return {'workerId': workerId, 'token': token};
   }
 
   factory WorkerSession.fromJson(Map<String, dynamic> json) {
@@ -47,17 +41,17 @@ class WorkerApiService {
     required String password,
   }) async {
     try {
-      final response = await _postJson(
-        '$_baseUrl/auth/login',
-        {
-          'identifier': identifier.trim(),
-          'password': password,
-        },
-      );
+      final response = await _postJson('$_baseUrl/auth/login', {
+        'identifier': identifier.trim(),
+        'password': password,
+      });
 
       final body = _parseResponse(response);
-      final data = (body['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
-      final role = (body['role'] ?? data['role'] ?? '').toString().toLowerCase();
+      final data =
+          (body['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
+      final role = (body['role'] ?? data['role'] ?? '')
+          .toString()
+          .toLowerCase();
 
       if (role != 'worker') {
         throw const ApiException(
@@ -66,7 +60,9 @@ class WorkerApiService {
         );
       }
 
-      final workerId = (body['id'] ?? data['workerId'] ?? data['id'] ?? data['_id'] ?? '').toString();
+      final workerId =
+          (body['id'] ?? data['workerId'] ?? data['id'] ?? data['_id'] ?? '')
+              .toString();
       final token = (body['token'] ?? data['token'] ?? '').toString();
 
       if (workerId.isEmpty || token.isEmpty) {
@@ -133,20 +129,17 @@ class WorkerApiService {
     required String status,
   }) async {
     try {
-      final response = await _patchJson(
-        '$_baseUrl/bookings/$bookingId',
-        {
-          'status': status,
-        },
-        token: session.token,
-      );
+      final response = await _patchJson('$_baseUrl/bookings/$bookingId', {
+        'status': status,
+      }, token: session.token);
 
       final body = await _parseAuthenticatedResponse(
         response,
         loginRoute: '/login',
         clearSession: clearSession,
       );
-      final data = (body['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
+      final data =
+          (body['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
 
       _cachedBookings = null;
       _lastBookingsFetchAt = null;
@@ -218,7 +211,10 @@ class WorkerApiService {
       final session = await getSavedSession();
 
       if (session == null) {
-        throw const ApiException(message: 'Please login again', statusCode: 401);
+        throw const ApiException(
+          message: 'Please login again',
+          statusCode: 401,
+        );
       }
 
       final response = await _getJson(
@@ -251,19 +247,18 @@ class WorkerApiService {
       final session = await getSavedSession();
 
       if (session == null) {
-        throw const ApiException(message: 'Please login again', statusCode: 401);
+        throw const ApiException(
+          message: 'Please login again',
+          statusCode: 401,
+        );
       }
 
-      final response = await _putJson(
-        '$_baseUrl/workers/profile',
-        {
-          'serviceId': serviceId,
-          'price': price,
-          'location': location,
-          'skills': skills,
-        },
-        token: session.token,
-      );
+      final response = await _putJson('$_baseUrl/workers/profile', {
+        'serviceId': serviceId,
+        'price': price,
+        'location': location,
+        'skills': skills,
+      }, token: session.token);
 
       final body = await _parseAuthenticatedResponse(
         response,
@@ -289,19 +284,17 @@ class WorkerApiService {
       final session = await getSavedSession();
 
       if (session == null) {
-        throw const ApiException(message: 'Please login again', statusCode: 401);
+        throw const ApiException(
+          message: 'Please login again',
+          statusCode: 401,
+        );
       }
 
-      final response = await _putJson(
-        '$_baseUrl/workers/update-location',
-        {
-          'latitude': latitude,
-          'longitude': longitude,
-          'isOnline': isOnline,
-        },
-        token: session.token,
-      );
-      
+      final response = await _putJson('$_baseUrl/workers/update-location', {
+        'latitude': latitude,
+        'longitude': longitude,
+        'isOnline': isOnline,
+      }, token: session.token);
 
       final body = await _parseAuthenticatedResponse(
         response,
@@ -319,11 +312,7 @@ class WorkerApiService {
   }
 
   Future<http.Response> _getJson(String url, {required String token}) {
-    return _send(
-      'get',
-      Uri.parse(url),
-      token: token,
-    );
+    return _send('get', Uri.parse(url), token: token);
   }
 
   Future<http.Response> _postJson(
@@ -365,9 +354,7 @@ class WorkerApiService {
         );
       }
 
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-      };
+      final headers = <String, String>{'Content-Type': 'application/json'};
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
       }
@@ -375,32 +362,55 @@ class WorkerApiService {
       late final http.Response response;
       switch (method) {
         case 'get':
-          response = await http.get(uri, headers: headers).timeout(shared_api.ApiService.requestTimeout);
+          response = await http
+              .get(uri, headers: headers)
+              .timeout(shared_api.ApiService.requestTimeout);
           break;
         case 'post':
           response = await http
-              .post(uri, headers: headers, body: jsonEncode(body ?? <String, dynamic>{}))
+              .post(
+                uri,
+                headers: headers,
+                body: jsonEncode(body ?? <String, dynamic>{}),
+              )
               .timeout(shared_api.ApiService.requestTimeout);
           break;
         case 'put':
           response = await http
-              .put(uri, headers: headers, body: jsonEncode(body ?? <String, dynamic>{}))
+              .put(
+                uri,
+                headers: headers,
+                body: jsonEncode(body ?? <String, dynamic>{}),
+              )
               .timeout(shared_api.ApiService.requestTimeout);
           break;
         case 'patch':
           response = await http
-              .patch(uri, headers: headers, body: jsonEncode(body ?? <String, dynamic>{}))
+              .patch(
+                uri,
+                headers: headers,
+                body: jsonEncode(body ?? <String, dynamic>{}),
+              )
               .timeout(shared_api.ApiService.requestTimeout);
           break;
         default:
-          throw const ApiException(message: 'Unsupported request method', statusCode: 500);
+          throw const ApiException(
+            message: 'Unsupported request method',
+            statusCode: 500,
+          );
       }
 
       return response;
     } on TimeoutException {
-      throw const ApiException(message: 'Network timeout, please try again', statusCode: 408);
+      throw const ApiException(
+        message: 'Network timeout, please try again',
+        statusCode: 408,
+      );
     } on SocketException {
-      throw const ApiException(message: 'Network error, please check your connection', statusCode: 503);
+      throw const ApiException(
+        message: 'Network error, please check your connection',
+        statusCode: 503,
+      );
     }
   }
 
@@ -428,7 +438,8 @@ class WorkerApiService {
 
     if (response.statusCode == 401) {
       throw ApiException(
-        message: body['message']?.toString() ?? 'Session expired or invalid token',
+        message:
+            body['message']?.toString() ?? 'Session expired or invalid token',
         statusCode: 401,
       );
     }

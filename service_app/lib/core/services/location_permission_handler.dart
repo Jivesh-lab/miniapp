@@ -47,7 +47,9 @@ class LocationPermissionHandler {
 
       if (permission == LocationPermission.deniedForever) {
         // Permission denied forever - user must open settings manually
-        debugPrint('Location permission denied forever. User must enable in settings.');
+        debugPrint(
+          'Location permission denied forever. User must enable in settings.',
+        );
         return false;
       }
 
@@ -107,8 +109,8 @@ class LocationPermissionHandler {
   ) async {
     try {
       // Convert coordinates to address using Google Geocoding API (via geolocator)
-      List<geo_coding.Placemark> placemarks =
-          await geo_coding.placemarkFromCoordinates(latitude, longitude);
+      List<geo_coding.Placemark> placemarks = await geo_coding
+          .placemarkFromCoordinates(latitude, longitude);
 
       if (placemarks.isEmpty) {
         debugPrint('No address found for coordinates');
@@ -118,7 +120,8 @@ class LocationPermissionHandler {
       final placemark = placemarks[0];
 
       // Return city name, or locality, or name
-      final address = placemark.locality ??
+      final address =
+          placemark.locality ??
           placemark.administrativeArea ??
           placemark.name ??
           'Unknown Location';

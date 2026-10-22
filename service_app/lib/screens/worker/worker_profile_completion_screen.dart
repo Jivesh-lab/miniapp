@@ -15,7 +15,8 @@ class WorkerProfileCompletionScreen extends StatefulWidget {
 }
 
 class _WorkerProfileCompletionScreenState
-    extends State<WorkerProfileCompletionScreen> with WidgetsBindingObserver {
+    extends State<WorkerProfileCompletionScreen>
+    with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
   final _priceController = TextEditingController();
   final _locationController = TextEditingController();

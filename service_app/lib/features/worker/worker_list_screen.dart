@@ -217,9 +217,7 @@ class _WorkerListScreenState extends State<WorkerListScreen>
     }
 
     if (_workers.isEmpty) {
-      return const Center(
-        child: Text('No workers available'),
-      );
+      return const Center(child: Text('No workers available'));
     }
 
     return Column(
@@ -247,12 +245,13 @@ class _WorkerListScreenState extends State<WorkerListScreen>
               child: isWide
                   ? GridView.builder(
                       itemCount: _workers.length,
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 1.55,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 1.55,
+                          ),
                       itemBuilder: (context, index) {
                         return WorkerCard(
                           worker: _workers[index],
@@ -268,8 +267,10 @@ class _WorkerListScreenState extends State<WorkerListScreen>
                           padding: const EdgeInsets.only(bottom: 12),
                           child: WorkerCard(
                             worker: _workers[index],
-                            onTap: () =>
-                                _navigateToWorkerDetail(context, _workers[index]),
+                            onTap: () => _navigateToWorkerDetail(
+                              context,
+                              _workers[index],
+                            ),
                           ),
                         );
                       },

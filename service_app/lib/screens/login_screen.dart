@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/error_message_helper.dart';
 
 import '../core/services/connectivity_service.dart';
 import '../core/services/app_api_client.dart';
@@ -43,7 +44,9 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final canNavigate = await ConnectivityService.ensureConnectedOrShow(context);
+      final canNavigate = await ConnectivityService.ensureConnectedOrShow(
+        context,
+      );
       if (!canNavigate || !mounted) {
         return;
       }
@@ -59,8 +62,9 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
+      ErrorMessageHelper.showSnack(
+        context,
+        SnackBar(content: Text(ErrorMessageHelper.auth(error))),
       );
     } finally {
       if (mounted) {
@@ -97,7 +101,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 4),
                           Text(
                             'Welcome back',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            style: Theme.of(context).textTheme.headlineMedium
+                                ?.copyWith(
                                   fontWeight: FontWeight.w800,
                                   color: const Color(0xFF0F172A),
                                 ),
@@ -105,9 +110,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 8),
                           Text(
                             'Login with your phone or email.',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.grey.shade700,
-                                ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Colors.grey.shade700),
                           ),
                           const SizedBox(height: 24),
                           TextFormField(
@@ -116,7 +120,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               labelText: 'Phone or email',
                             ),
                             keyboardType: TextInputType.emailAddress,
-                            validator: (value) => (value == null || value.trim().isEmpty)
+                            validator: (value) =>
+                                (value == null || value.trim().isEmpty)
                                 ? 'Enter phone or email'
                                 : null,
                           ),
@@ -127,11 +132,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             decoration: InputDecoration(
                               labelText: 'Password',
                               suffixIcon: IconButton(
-                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                                icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                                onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                ),
                               ),
                             ),
-                            validator: (value) => (value == null || value.length < 6)
+                            validator: (value) =>
+                                (value == null || value.length < 6)
                                 ? 'Password must be at least 6 characters'
                                 : null,
                           ),
@@ -144,7 +156,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ? const SizedBox(
                                       width: 20,
                                       height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
                                     )
                                   : const Text('Login'),
                             ),
@@ -154,7 +168,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: _isLoading
                                 ? null
                                 : () async {
-                                    if (!await ConnectivityService.ensureConnectedOrShow(context)) {
+                                    if (!await ConnectivityService.ensureConnectedOrShow(
+                                      context,
+                                    )) {
                                       return;
                                     }
                                     Navigator.pushNamed(context, '/register');

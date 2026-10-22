@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
@@ -202,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
 
       setState(() {
-        _serviceError = e.toString().replaceFirst('Exception: ', '');
+        _serviceError = ErrorMessageHelper.generic(e);
         _isLoadingServices = false;
       });
     }
@@ -226,9 +226,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             body: _buildHomeBody(),
           ),
           // Tab 1: Bookings ΓÇö has its own Scaffold+AppBar
-          MyBookingsScreen(
-            onBack: () => setState(() => _selectedNavIndex = 0),
-          ),
+          MyBookingsScreen(onBack: () => setState(() => _selectedNavIndex = 0)),
           // Tab 2: Profile ΓÇö has its own Scaffold+AppBar
           ProfileScreen(
             onBack: () => setState(() => _selectedNavIndex = 0),
@@ -254,16 +252,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 20),
-                
+
                 // USER GREETING SECTION
                 _buildGreetingSection(),
-                
+
                 const SizedBox(height: 28),
-                
+
                 // Search Bar
                 SearchBarWidget(onChanged: (value) {}),
                 const SizedBox(height: 20),
-                
+
                 // Services Title
                 Text(
                   'Popular Services',
@@ -274,11 +272,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ),
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Services Grid
                 _buildServicesGrid(width),
                 const SizedBox(height: 28),
-                
+
                 // Why Choose Us Section
                 Text(
                   'Why Choose Us?',
@@ -289,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ),
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Features Grid
                 _buildFeatureGrid(width),
                 const SizedBox(height: 32),
@@ -304,21 +302,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Greeting section with user name and location
   Widget _buildGreetingSection() {
     final greeting = _getTimeBasedGreeting();
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-              AppColors.primaryLight,
-              AppColors.background,
-          ],
+          colors: [AppColors.primaryLight, AppColors.background],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.2),
+          color: AppColors.primary.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -353,7 +348,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           // Subtext
           Text(
             'Welcome back!',
@@ -364,7 +359,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Location with icon
           Row(
             children: [
@@ -670,7 +665,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final hasInternet = await NetworkService.hasInternetConnection();
     if (!hasInternet) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      ErrorMessageHelper.showSnack(
+        context,
+
         const SnackBar(content: Text('Please check your internet connection')),
       );
       Navigator.pushNamed(context, '/no-internet');
@@ -686,5 +683,3 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 }
-
-

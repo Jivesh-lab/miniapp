@@ -247,7 +247,9 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen>
       setState(() => _isFavorite = isFavorite);
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      ErrorMessageHelper.showSnack(
+        context,
+
         const SnackBar(content: Text('Failed to update favorite')),
       );
     }
@@ -766,7 +768,9 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen>
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ErrorMessageHelper.showSnack(
+                      context,
+
                       SnackBar(
                         content: Text(
                           'Booking request sent to ${worker.name}!',

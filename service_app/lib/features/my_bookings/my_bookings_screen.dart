@@ -52,7 +52,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       socket.off('booking_status_updated');
       socket.on('booking_status_updated', (data) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        ErrorMessageHelper.showSnack(
+          context,
+
           const SnackBar(
             content: Text('Your booking status was updated!'),
             backgroundColor: AppColors.primary,
@@ -64,7 +66,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
 
     _autoRefreshTimer?.cancel();
     _autoRefreshTimer = Timer.periodic(const Duration(seconds: 12), (_) {
-      if (!mounted || _isLoading || _isRatingDialogVisible || _isSubmittingRating) {
+      if (!mounted ||
+          _isLoading ||
+          _isRatingDialogVisible ||
+          _isSubmittingRating) {
         return;
       }
       _fetchBookings();
@@ -121,7 +126,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       }
 
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = ErrorMessageHelper.generic(e);
         _isLoading = false;
       });
     }
@@ -182,7 +187,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
           return;
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
+        ErrorMessageHelper.showSnack(
+          context,
+
           const SnackBar(content: Text('Thanks for your feedback!')),
         );
 
@@ -194,8 +201,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
           return;
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        ErrorMessageHelper.showSnack(
+          context,
+          SnackBar(content: Text(ErrorMessageHelper.generic(e))),
         );
       } finally {
         if (mounted) {
@@ -539,8 +547,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
       await _fetchBookings();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      ErrorMessageHelper.showSnack(
+        context,
+        SnackBar(content: Text(ErrorMessageHelper.generic(e))),
       );
     }
   }

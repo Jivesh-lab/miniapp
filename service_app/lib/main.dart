@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import 'core/config/app_theme.dart';
 import 'core/models/worker_model.dart';
@@ -42,7 +42,8 @@ class ServiceApp extends StatelessWidget {
         '/worker-list': (context) => const WorkerListScreen(),
         '/my-bookings': (context) => const MyBookingsScreen(),
         '/profile': (context) => const ProfileScreen(),
-        '/worker/complete-profile': (context) => const WorkerProfileCompletionScreen(),
+        '/worker/complete-profile': (context) =>
+            const WorkerProfileCompletionScreen(),
         '/worker/dashboard': (context) => const WorkerDashboardScreen(),
         '/worker/bookings': (context) => const WorkerBookingsScreen(),
         '/worker/profile': (context) => const WorkerProfileScreen(),
@@ -77,4 +78,3 @@ class ServiceApp extends StatelessWidget {
     );
   }
 }
-

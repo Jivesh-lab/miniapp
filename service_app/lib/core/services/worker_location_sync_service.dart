@@ -6,7 +6,8 @@ import 'location_service.dart';
 class WorkerLocationSyncService {
   WorkerLocationSyncService._();
 
-  static final WorkerLocationSyncService _instance = WorkerLocationSyncService._();
+  static final WorkerLocationSyncService _instance =
+      WorkerLocationSyncService._();
   factory WorkerLocationSyncService() => _instance;
 
   final WorkerApiService _workerApi = WorkerApiService();
