@@ -48,6 +48,17 @@ export const createBooking = async (req, res) => {
       return sendWorkerValidationError(res, "Invalid date");
     }
 
+    const now = new Date();
+    const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    // One day of tolerance so users ahead of UTC can still book "today".
+    if (selectedDate.getTime() < todayUtc - 24 * 60 * 60 * 1000) {
+      return sendWorkerValidationError(res, "Cannot book a date in the past");
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(workerId)) {
+      return sendWorkerValidationError(res, "Invalid worker id");
+    }
+
     const worker = await Worker.findById(workerId).select("_id").lean();
 
     if (!worker) {
@@ -64,7 +75,7 @@ export const createBooking = async (req, res) => {
       workerId,
       date,
       time,
-      status: { $nin: ["cancelled", "rejected"] },
+      status: { $in: ["pending", "confirmed", "in-progress", "completed"] },
     }).lean();
 
     if (existingBooking) {
@@ -154,7 +165,7 @@ export const updateBookingStatus = async (req, res) => {
     }
 
     if (booking.workerId.toString() !== String(workerFromToken)) {
-      return sendWorkerError(res, 401, "Unauthorized access to booking");
+      return sendWorkerError(res, 403, "Unauthorized access to booking");
     }
 
     const workerAllowedTransitions = {
@@ -225,10 +236,10 @@ export const cancelBooking = async (req, res) => {
     }
 
     if (String(booking.userId) !== userId) {
-      return sendWorkerError(res, 401, "Unauthorized: You can only cancel your own booking");
+      return sendWorkerError(res, 403, "Unauthorized: You can only cancel your own booking");
     }
 
-    if (booking.status === "completed" || booking.status === "cancelled") {
+    if (["completed", "cancelled", "rejected"].includes(booking.status)) {
       return sendWorkerValidationError(res, "Cannot cancel this booking");
     }
 
@@ -293,8 +304,9 @@ export const rateBooking = async (req, res) => {
       return sendWorkerValidationError(res, "Already rated");
     }
 
-    const updatedBooking = await Booking.findByIdAndUpdate(
-      id,
+    // Filtering on isRated:false makes the claim atomic, so concurrent requests cannot double-rate.
+    const updatedBooking = await Booking.findOneAndUpdate(
+      { _id: id, userId, isRated: false },
       {
         $set: {
           isRated: true,
@@ -307,31 +319,36 @@ export const rateBooking = async (req, res) => {
       { returnDocument: "after", runValidators: true }
     ).lean();
 
+    if (!updatedBooking) {
+      return sendWorkerValidationError(res, "Already rated");
+    }
+
     const reviewEntry = {
-      userId: booking.userId,
+      userId: String(booking.userId),
       comment: normalizedComment,
       rating: parsedRating,
       createdAt: new Date(),
     };
 
-    await Worker.findByIdAndUpdate(booking.workerId, {
-      $push: {
-        reviews: reviewEntry,
-      },
-    });
-
-    const worker = await Worker.findById(booking.workerId);
+    // Single pipeline update so concurrent ratings cannot overwrite each other's sums.
+    const worker = await Worker.findByIdAndUpdate(
+      booking.workerId,
+      [
+        {
+          $set: {
+            reviews: { $concatArrays: [{ $ifNull: ["$reviews", []] }, [{ $literal: reviewEntry }]] },
+            ratingSum: { $add: [{ $ifNull: ["$ratingSum", 0] }, parsedRating] },
+            ratingCount: { $add: [{ $ifNull: ["$ratingCount", 0] }, 1] },
+          },
+        },
+        { $set: { rating: { $round: [{ $divide: ["$ratingSum", "$ratingCount"] }, 1] } } },
+      ],
+      { returnDocument: "after" }
+    ).lean();
 
     if (!worker) {
       return sendWorkerNotFound(res, "Worker not found");
     }
-
-    worker.ratingSum = Number(worker.ratingSum || 0) + parsedRating;
-    worker.ratingCount = Number(worker.ratingCount || 0) + 1;
-    const averageRating = worker.ratingCount > 0 ? worker.ratingSum / worker.ratingCount : 0;
-    worker.rating = Number(averageRating.toFixed(1));
-
-    await worker.save();
 
     return res.status(200).json({
       success: true,

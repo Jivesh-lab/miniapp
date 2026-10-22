@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../core/services/location_service.dart';
 import '../../core/services/location_permission_handler.dart';
 import '../../core/services/location_api_service.dart';
 
@@ -49,7 +48,7 @@ class _LocationDemoScreenState extends State<LocationDemoScreen> {
 
     try {
       // Ask the shared location helper to handle service + permission.
-      final ready = await LocationService.ensureServiceAndPermission(context);
+      final ready = await LocationPermissionHandler.requestLocationPermission();
       if (!ready) {
         setState(() {
           _errorMessage = 'Location is required. Please enable it in settings.';

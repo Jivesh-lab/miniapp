@@ -43,6 +43,9 @@ class SocketService {
 
     if (token == null) return;
 
+    // Drop any previous connection so repeated calls (e.g. after re-login) don't leak sockets.
+    _socket?.dispose();
+
     _socket = IO.io(
       ApiConfig.socketUrl,
       IO.OptionBuilder()
@@ -68,7 +71,7 @@ class SocketService {
   }
 
   void disconnect() {
-    _socket?.disconnect();
+    _socket?.dispose();
     _socket = null;
   }
 }

@@ -39,7 +39,9 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    callback(new Error("Not allowed by CORS"));
+    const corsError = new Error("Not allowed by CORS");
+    corsError.statusCode = 403;
+    callback(corsError);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -71,8 +73,9 @@ app.use("/api/worker", workerRoutes);
 app.use("/api/workers", workerRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/services", serviceRoutes);
-app.use("/api/users", userRoutes);
+// Location routes first: userRoutes has a catch-all "/:id" that would shadow GET /location and /nearby.
 app.use("/api/users", locationRoutes);
+app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/", geocodingRoutes);
 

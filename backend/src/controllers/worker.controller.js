@@ -10,6 +10,8 @@ import { calculateDistance, formatDistance, isValidCoordinates } from "../utils/
 
 const DEFAULT_ALL_SLOTS = ["10:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"];
 
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const parseOptionalNumber = (value) => {
   if (value === undefined || value === null || value === "") return { value: undefined };
 
@@ -66,13 +68,14 @@ const buildWorkerQuery = ({ serviceId, query }) => {
     workerQuery.serviceId = serviceId;
   }
 
-  if (query.q && query.q.trim()) {
-    const pattern = new RegExp(query.q.trim(), "i");
+  if (typeof query.q === "string" && query.q.trim()) {
+    const pattern = new RegExp(escapeRegex(query.q.trim()), "i");
     workerQuery.$or = [{ name: pattern }, { skills: pattern }];
   }
 
-  if (query.rating) {
-    workerQuery.rating = { $gte: Number(query.rating) };
+  const minRating = Number(query.rating ?? query.minRating);
+  if ((query.rating || query.minRating) && Number.isFinite(minRating)) {
+    workerQuery.rating = { $gte: minRating };
   }
 
   if (query.minPrice || query.maxPrice) {
@@ -80,11 +83,11 @@ const buildWorkerQuery = ({ serviceId, query }) => {
       ...workerQuery.price,
     };
 
-    if (query.minPrice) {
+    if (query.minPrice && Number.isFinite(Number(query.minPrice))) {
       workerQuery.price.$gte = Number(query.minPrice);
     }
 
-    if (query.maxPrice) {
+    if (query.maxPrice && Number.isFinite(Number(query.maxPrice))) {
       workerQuery.price.$lte = Number(query.maxPrice);
     }
   }
@@ -226,7 +229,7 @@ export const getAllWorkers = async (req, res) => {
     }
 
     if (typeof q === "string" && q.trim()) {
-      const pattern = new RegExp(q.trim(), "i");
+      const pattern = new RegExp(escapeRegex(q.trim()), "i");
       workerQuery.$or = [{ name: pattern }, { skills: pattern }];
     }
 
@@ -455,7 +458,7 @@ export const getNearbyWorkers = async (req, res) => {
     }
 
     if (typeof req.query.q === "string" && req.query.q.trim()) {
-      const pattern = new RegExp(req.query.q.trim(), "i");
+      const pattern = new RegExp(escapeRegex(req.query.q.trim()), "i");
       match.$or = [{ name: pattern }, { skills: pattern }];
     }
 
@@ -542,7 +545,7 @@ export const getWorkerAvailableSlots = async (req, res) => {
     const booked = await Booking.find({
       workerId: id,
       date,
-      status: { $in: ["pending", "confirmed"] },
+      status: { $in: ["pending", "confirmed", "in-progress", "completed"] },
     })
       .select("time -_id")
       .lean();

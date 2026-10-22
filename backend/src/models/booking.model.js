@@ -58,7 +58,14 @@ const bookingSchema = new mongoose.Schema(
   }
 );
 
-bookingSchema.index({ workerId: 1, date: 1, time: 1 }, { unique: true });
+// A slot is only locked while the booking is active, so cancelled/rejected bookings can be re-booked.
+bookingSchema.index(
+  { workerId: 1, date: 1, time: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: { $in: ["pending", "confirmed", "in-progress", "completed"] } },
+  }
+);
 bookingSchema.index({ userId: 1 });
 bookingSchema.index({ workerId: 1 });
 bookingSchema.index({ status: 1, isRated: 1 });

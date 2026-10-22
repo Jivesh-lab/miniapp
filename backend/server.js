@@ -8,6 +8,11 @@ const __dirname = path.dirname(__filename);
 // Always load backend/.env (even if node is started from another working directory).
 dotenv.config({ path: path.join(__dirname, ".env") });
 
+if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+  console.error("❌ JWT_SECRET must be set in production");
+  process.exit(1);
+}
+
 const { default: app } = await import("./src/app.js");
 const { default: connectDB } = await import("./src/config/db.js");
 const { initSocket } = await import("./src/socket.js");

@@ -170,8 +170,8 @@ export const getWorkerProfile = async (req, res) => {
       }
 
       const parsedPrice = Number(price);
-      if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
-        return sendWorkerValidationError(res, "price must be a valid number");
+      if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+        return sendWorkerValidationError(res, "price must be a number greater than 0");
       }
 
       const normalizedLocation = String(location).trim();

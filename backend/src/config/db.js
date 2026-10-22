@@ -21,6 +21,14 @@ const connectDB = async () => {
     
     console.log(`✅ MongoDB Connected: ${connection.host}`);
 
+    // Replace the legacy unconditional (workerId,date,time) unique index with the partial one.
+    try {
+      const { default: Booking } = await import("../models/booking.model.js");
+      await Booking.syncIndexes();
+    } catch (indexError) {
+      console.warn("⚠️  Booking index sync failed:", indexError.message);
+    }
+
     // Handle connection events
     mongoose.connection.on("disconnected", () => {
       console.warn("⚠️  MongoDB disconnected");

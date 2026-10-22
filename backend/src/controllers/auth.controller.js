@@ -4,11 +4,14 @@ import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 import Worker from "../models/worker.model.js";
 import EmailOtp from "../models/emailOtp.model.js";
+import Blacklist from "../models/blacklist.model.js";
 import { sendOtpEmail } from "../utils/email.util.js";
 import crypto from "crypto";
 import { isStrongEnoughPassword, isValidEmail, isValidPhone } from "../utils/validators.js";
 
-const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
+const MAX_OTP_ATTEMPTS = 5;
+
+const generateOtp = () => crypto.randomInt(100000, 1000000).toString();
 const hashOtp = (otp) => crypto.createHash("sha256").update(otp).digest("hex");
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_worker_jwt_secret";
@@ -343,16 +346,21 @@ export const login = async (req, res) => {
 
 export const verifyLoginOtp = async (req, res) => {
   try {
-    const { identifier, otp, role } = req.body ?? {};
+    const { identifier, otp } = req.body ?? {};
 
-    if (!identifier || !otp || !role) {
-      return sendValidationError(res, "identifier, otp, and role are required");
+    if (!identifier || !otp) {
+      return sendValidationError(res, "identifier and otp are required");
     }
 
-    const otpRecord = await EmailOtp.findOne({ 
-      email: String(identifier).toLowerCase(), 
-      purpose: "register" 
-    }).select("+otpHash");
+    // OTPs are only issued for user registration, so the role is never taken from the client.
+    const role = "user";
+
+    const otpRecord = await EmailOtp.findOne({
+      email: normalizeEmail(identifier),
+      purpose: "register",
+    })
+      .sort({ createdAt: -1 })
+      .select("+otpHash");
 
     if (!otpRecord) {
       return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
@@ -363,7 +371,18 @@ export const verifyLoginOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: "OTP expired" });
     }
 
-    if (otpRecord.otpHash !== hashOtp(String(otp))) {
+    if (otpRecord.attempts >= MAX_OTP_ATTEMPTS) {
+      await EmailOtp.deleteOne({ _id: otpRecord._id });
+      return res.status(429).json({ success: false, message: "Too many attempts. Please register again." });
+    }
+
+    const submittedHash = Buffer.from(hashOtp(String(otp).trim()));
+    const storedHash = Buffer.from(otpRecord.otpHash);
+    const otpMatches =
+      submittedHash.length === storedHash.length && crypto.timingSafeEqual(submittedHash, storedHash);
+
+    if (!otpMatches) {
+      await EmailOtp.updateOne({ _id: otpRecord._id }, { $inc: { attempts: 1 } });
       return res.status(400).json({ success: false, message: "Invalid OTP" });
     }
 
@@ -371,36 +390,22 @@ export const verifyLoginOtp = async (req, res) => {
 
     const token = signToken(otpRecord.userId.toString(), role);
 
-    if (role === "worker") {
-      const worker = await Worker.findById(otpRecord.userId).lean();
-      return res.status(200).json({
-        success: true,
-        message: "Login successful",
-        token,
-        role: "worker",
-        profileComplete: isProfileComplete(worker),
-        id: worker._id,
-        data: {
-          ...serializeWorker(worker),
-          token,
-          role: "worker",
-        },
-      });
-    } else {
-      const user = await User.findById(otpRecord.userId).lean();
-      return res.status(200).json({
-        success: true,
-        message: "Login successful",
+    const user = await User.findById(otpRecord.userId).lean();
+    if (!user) {
+      return sendNotFoundError(res, "User not found");
+    }
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token,
+      role: "user",
+      id: user._id,
+      data: {
+        ...serializeUser(user),
         token,
         role: "user",
-        id: user._id,
-        data: {
-          ...serializeUser(user),
-          token,
-          role: "user",
-        },
-      });
-    }
+      },
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -418,6 +423,13 @@ export const logout = async (req, res) => {
     if (!token) {
       return res.status(401).json({ message: "No token, unauthorized" });
     }
+
+    const expSeconds = Number(req.user?.exp);
+    const expiresAt = Number.isFinite(expSeconds)
+      ? new Date(expSeconds * 1000)
+      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await Blacklist.updateOne({ token }, { $setOnInsert: { token, expiresAt } }, { upsert: true });
 
     return res.status(200).json({
       success: true,

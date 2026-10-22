@@ -1,5 +1,7 @@
 import User from "../models/user.model.js";
+import mongoose from "mongoose";
 import Worker from "../models/worker.model.js";
+import { isValidPhone } from "../utils/validators.js";
 
 const findUserByIdentifier = async (identifier) => {
   const byCustomId = await User.findOne({ userId: identifier });
@@ -192,9 +194,36 @@ export const updateUser = async (req, res) => {
       });
     }
 
+    const update = {};
+
+    if (name !== undefined) {
+      const trimmedName = String(name).trim();
+      if (!trimmedName) {
+        return res.status(400).json({ success: false, message: "name cannot be empty" });
+      }
+      update.name = trimmedName;
+    }
+
+    if (phone !== undefined) {
+      const trimmedPhone = String(phone).trim();
+      if (!isValidPhone(trimmedPhone)) {
+        return res.status(400).json({ success: false, message: "Invalid phone format" });
+      }
+      if (trimmedPhone !== existing.phone) {
+        const [phoneTakenByUser, phoneTakenByWorker] = await Promise.all([
+          User.exists({ phone: trimmedPhone, _id: { $ne: existing._id } }),
+          Worker.exists({ phone: trimmedPhone }),
+        ]);
+        if (phoneTakenByUser || phoneTakenByWorker) {
+          return res.status(409).json({ success: false, message: "Phone number already in use" });
+        }
+      }
+      update.phone = trimmedPhone;
+    }
+
     const user = await User.findByIdAndUpdate(
       existing._id,
-      { name, phone },
+      update,
       { returnDocument: "after", runValidators: true }
     ).lean();
 
@@ -250,6 +279,13 @@ export const addFavoriteWorker = async (req, res) => {
       });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(workerId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid workerId",
+      });
+    }
+
     const worker = await Worker.findById(workerId).lean();
     if (!worker) {
       return res.status(404).json({
@@ -265,11 +301,11 @@ export const addFavoriteWorker = async (req, res) => {
 
     const user = access.user;
 
-    const exists = user.favoriteWorkers.some((id) => id.toString() === workerId);
+    const exists = user.favoriteWorkers.some((id) => id.toString() === String(workerId));
 
     if (exists) {
       user.favoriteWorkers = user.favoriteWorkers.filter(
-        (id) => id.toString() !== workerId
+        (id) => id.toString() !== String(workerId)
       );
     } else {
       user.favoriteWorkers.push(workerId);
